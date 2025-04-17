@@ -118,20 +118,10 @@
         </div>
         {{WIFI_NETWORKS}}
     </div>
-    
-    <div class="section">
-        <button id="setupButton">Setup VSCode tasks.json and launch.json</button>
-    </div>
 
     <script>
         const vscode = acquireVsCodeApi();
         
-        document.getElementById('setupButton').addEventListener('click', () => {
-            vscode.postMessage({
-                command: 'setupTasksAndLaunch'
-            });
-        });
-
         document.getElementById('refreshDevice').addEventListener('click', () => {
             vscode.postMessage({
                 command: 'refreshDevice'

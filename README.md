@@ -16,6 +16,16 @@ For example if there is an image subfolder under your extension project workspac
 
 > Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
 
+## Commands
+
+The Edge Developer Extension provides several commands that can be accessed through the Command Palette (`Ctrl+Shift+P` or `Cmd+Shift+P` on macOS):
+
+* `Edge Developer Extension: Setup .vscode` - Creates both tasks.json and launch.json files in the .vscode folder
+* `Edge Developer Extension: Setup only tasks.json` - Creates only the tasks.json file in the .vscode folder
+* `Edge Developer Extension: Setup only launch.json` - Creates only the launch.json file in the .vscode folder
+
+These commands can also be accessed directly from the "Setup Project" section in the Edge Devices sidebar.
+
 ## Requirements
 
 1. You need a VSCode engine that is >= 1.97.0

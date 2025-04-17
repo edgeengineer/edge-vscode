@@ -31,6 +31,10 @@
           "name": "Devices"
         },
         {
+          "id": "edgeSetup",
+          "name": "Setup Project"
+        },
+        {
           "id": "edgeDocumentation",
           "name": "Documentation"
         }
@@ -78,6 +82,18 @@
       {
         "command": "edge-developer-extension.openDeviceDetails",
         "title": "Open Device Details"
+      },
+      {
+        "command": "edge-developer-extension.setupVSCode",
+        "title": "Setup .vscode folder"
+      },
+      {
+        "command": "edge-developer-extension.setupTasksJson",
+        "title": "Setup tasks.json"
+      },
+      {
+        "command": "edge-developer-extension.setupLaunchJson",
+        "title": "Setup launch.json"
       }
     ],
     "menus": {

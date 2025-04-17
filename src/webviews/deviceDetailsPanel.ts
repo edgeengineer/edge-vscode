@@ -71,10 +71,6 @@ export class DeviceDetailsPanel {
         this._panel.webview.onDidReceiveMessage(
             message => {
                 switch (message.command) {
-                    case 'setupTasksAndLaunch':
-                        vscode.window.showInformationMessage(`Setting up tasks.json and launch.json for ${this._device.name}`);
-                        this._setupTasksAndLaunch();
-                        return;
                     case 'refreshDevice':
                         vscode.window.showInformationMessage(`Refreshing device information for ${this._device.name}`);
                         this._refreshDeviceInfo();
@@ -248,11 +244,5 @@ export class DeviceDetailsPanel {
                                   .replace('{{WIFI_NETWORKS}}', wifiNetworksHtml);
         
         return templateHtml;
-    }
-
-    private _setupTasksAndLaunch() {
-        // This would be implemented to create or update tasks.json and launch.json
-        // For now, just show a message
-        vscode.window.showInformationMessage(`Setting up tasks.json and launch.json for ${this._device.name}`);
     }
 }

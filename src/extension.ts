@@ -1,10 +1,13 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
 import { DeviceProvider } from './providers/deviceProvider';
 import { Device } from './models/device';
 import { DocumentationProvider } from './providers/documentationProvider';
 import { DeviceDetailsPanel } from './webviews/deviceDetailsPanel';
+import { SetupProvider } from './providers/setupProvider';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -25,6 +28,11 @@ export function activate(context: vscode.ExtensionContext) {
 	const documentationProvider = new DocumentationProvider();
 	const docTreeView = vscode.window.registerTreeDataProvider('edgeDocumentation', documentationProvider);
 	context.subscriptions.push(docTreeView);
+
+	// Create and register the setup provider
+	const setupProvider = new SetupProvider();
+	const setupTreeView = vscode.window.registerTreeDataProvider('edgeSetup', setupProvider);
+	context.subscriptions.push(setupTreeView);
 
 	// Register commands
 	const refreshCommand = vscode.commands.registerCommand('edge-developer-extension.refreshDevices', () => {
@@ -92,6 +100,22 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 	context.subscriptions.push(openDocumentationCommand);
 
+	// Setup commands
+	const setupVSCodeCommand = vscode.commands.registerCommand('edge-developer-extension.setupVSCode', async () => {
+		await setupVSCodeFolder();
+	});
+	context.subscriptions.push(setupVSCodeCommand);
+
+	const setupTasksJsonCommand = vscode.commands.registerCommand('edge-developer-extension.setupTasksJson', async () => {
+		await setupTasksJson();
+	});
+	context.subscriptions.push(setupTasksJsonCommand);
+
+	const setupLaunchJsonCommand = vscode.commands.registerCommand('edge-developer-extension.setupLaunchJson', async () => {
+		await setupLaunchJson();
+	});
+	context.subscriptions.push(setupLaunchJsonCommand);
+
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
 	// The commandId parameter must match the command field in package.json
@@ -106,3 +130,150 @@ export function activate(context: vscode.ExtensionContext) {
 
 // This method is called when your extension is deactivated
 export function deactivate() {}
+
+// Setup .vscode folder with both tasks.json and launch.json
+async function setupVSCodeFolder(): Promise<void> {
+	try {
+		// Get the workspace folder
+		const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+		if (!workspaceFolder) {
+			vscode.window.showErrorMessage('No workspace folder found. Please open a folder first.');
+			return;
+		}
+
+		// Create .vscode folder if it doesn't exist
+		const vscodeDir = path.join(workspaceFolder.uri.fsPath, '.vscode');
+		if (!fs.existsSync(vscodeDir)) {
+			fs.mkdirSync(vscodeDir);
+		}
+
+		// Setup both files
+		await setupTasksJson();
+		await setupLaunchJson();
+
+		vscode.window.showInformationMessage('.vscode folder setup complete with tasks.json and launch.json');
+	} catch (error) {
+		vscode.window.showErrorMessage(`Error setting up .vscode folder: ${error}`);
+	}
+}
+
+// Setup tasks.json
+async function setupTasksJson(): Promise<void> {
+	try {
+		// Get the workspace folder
+		const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+		if (!workspaceFolder) {
+			vscode.window.showErrorMessage('No workspace folder found. Please open a folder first.');
+			return;
+		}
+
+		// Create .vscode folder if it doesn't exist
+		const vscodeDir = path.join(workspaceFolder.uri.fsPath, '.vscode');
+		if (!fs.existsSync(vscodeDir)) {
+			fs.mkdirSync(vscodeDir);
+		}
+
+		// Create tasks.json
+		const tasksJsonPath = path.join(vscodeDir, 'tasks.json');
+		const tasksJson = {
+			"version": "2.0.0",
+			"tasks": [
+				{
+					"label": "Deploy to Edge Device",
+					"type": "shell",
+					"command": "rsync -avz --exclude 'node_modules' --exclude '.git' ${workspaceFolder}/ edge-device:/home/edge/app/",
+					"problemMatcher": [],
+					"presentation": {
+						"reveal": "always",
+						"panel": "new"
+					},
+					"group": {
+						"kind": "build",
+						"isDefault": true
+					}
+				},
+				{
+					"label": "Run on Edge Device",
+					"type": "shell",
+					"command": "ssh edge-device 'cd /home/edge/app && npm start'",
+					"problemMatcher": [],
+					"presentation": {
+						"reveal": "always",
+						"panel": "new"
+					}
+				},
+				{
+					"label": "Stop App on Edge Device",
+					"type": "shell",
+					"command": "ssh edge-device 'pkill -f \"node /home/edge/app\" || true'",
+					"problemMatcher": [],
+					"presentation": {
+						"reveal": "always",
+						"panel": "new"
+					}
+				}
+			]
+		};
+
+		fs.writeFileSync(tasksJsonPath, JSON.stringify(tasksJson, null, 2));
+		vscode.window.showInformationMessage('tasks.json has been set up successfully.');
+	} catch (error) {
+		vscode.window.showErrorMessage(`Error setting up tasks.json: ${error}`);
+	}
+}
+
+// Setup launch.json
+async function setupLaunchJson(): Promise<void> {
+	try {
+		// Get the workspace folder
+		const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+		if (!workspaceFolder) {
+			vscode.window.showErrorMessage('No workspace folder found. Please open a folder first.');
+			return;
+		}
+
+		// Create .vscode folder if it doesn't exist
+		const vscodeDir = path.join(workspaceFolder.uri.fsPath, '.vscode');
+		if (!fs.existsSync(vscodeDir)) {
+			fs.mkdirSync(vscodeDir);
+		}
+
+		// Create launch.json
+		const launchJsonPath = path.join(vscodeDir, 'launch.json');
+		const launchJson = {
+			"version": "0.2.0",
+			"configurations": [
+				{
+					"type": "node",
+					"request": "launch",
+					"name": "Debug on Edge Device",
+					"preLaunchTask": "Deploy to Edge Device",
+					"address": "edge-device",
+					"port": 9229,
+					"localRoot": "${workspaceFolder}",
+					"remoteRoot": "/home/edge/app",
+					"skipFiles": [
+						"<node_internals>/**"
+					]
+				},
+				{
+					"type": "node",
+					"request": "attach",
+					"name": "Attach to Edge Device",
+					"address": "edge-device",
+					"port": 9229,
+					"localRoot": "${workspaceFolder}",
+					"remoteRoot": "/home/edge/app",
+					"skipFiles": [
+						"<node_internals>/**"
+					]
+				}
+			]
+		};
+
+		fs.writeFileSync(launchJsonPath, JSON.stringify(launchJson, null, 2));
+		vscode.window.showInformationMessage('launch.json has been set up successfully.');
+	} catch (error) {
+		vscode.window.showErrorMessage(`Error setting up launch.json: ${error}`);
+	}
+}
