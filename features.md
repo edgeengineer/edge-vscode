@@ -54,3 +54,6 @@ interface Device {
 2. On the `DeviceDetailsPage`. We should have a table of all the device properties listed like name, type, ip, port, host, operatingSystem, operatingSystemVersion. 
 3. Below the table of details we need another table that shows the list of Wi-Fi networks that are available, and which one is currently connected. 
 4. Below the table of Wi-Fi networks, we need a button that says "Setup VSCode tasks.json and launch.json"
+5. In the cell that has a `Connected` Wi-Fi network, we should have a button that says "Disconnect"
+6. In the title where the "Device Tails: {{DEVICE_NAME}}" is, all the way to the right should have a refresh button that says "Refresh" using the vscode icon `$(sync)`. This should be occasionally syncing in the background but pressing the button should force a refresh.
+7. In the title where the "Wi-Fi Networks" is, all the way to the right should have a refresh button that says "Refresh" using the vscode icon `$(sync)`. This should be occasionally syncing in the background but pressing the button should force a refresh.

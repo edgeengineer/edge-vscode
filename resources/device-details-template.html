@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Device Details: {{DEVICE_NAME}}</title>
+    <style>
+        body {
+            font-family: var(--vscode-font-family);
+            color: var(--vscode-foreground);
+            background-color: var(--vscode-editor-background);
+            padding: 20px;
+        }
+        h1, h2 {
+            color: var(--vscode-editor-foreground);
+            border-bottom: 1px solid var(--vscode-panel-border);
+            padding-bottom: 10px;
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        th, td {
+            text-align: left;
+            padding: 8px;
+            border: 1px solid var(--vscode-panel-border);
+        }
+        th {
+            background-color: var(--vscode-editor-lineHighlightBackground);
+        }
+        tr:nth-child(even) {
+            background-color: var(--vscode-editor-inactiveSelectionBackground);
+        }
+        .connected {
+            color: var(--vscode-terminal-ansiGreen);
+            font-weight: bold;
+        }
+        .signal-strength {
+            width: 100px;
+            height: 10px;
+            background-color: var(--vscode-editor-background);
+            border: 1px solid var(--vscode-panel-border);
+            display: inline-block;
+            margin-right: 10px;
+        }
+        .signal-bar {
+            height: 100%;
+            background-color: var(--vscode-terminal-ansiGreen);
+        }
+        button {
+            background-color: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+            border: none;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            border-radius: 2px;
+            display: inline-flex;
+            align-items: center;
+        }
+        button:hover {
+            background-color: var(--vscode-button-hoverBackground);
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .refresh-button {
+            background: transparent;
+            color: var(--vscode-button-foreground);
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+        .refresh-button:hover {
+            background-color: var(--vscode-button-secondaryHoverBackground);
+        }
+        .disconnect-button {
+            background-color: var(--vscode-errorForeground);
+            margin-left: 10px;
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+        .icon {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            margin-right: 4px;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: contain;
+            vertical-align: middle;
+        }
+        .icon-refresh {
+            background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M4.681 3H2V2h3.5l.5.5V6H5V4a5 5 0 1 0 4.53-2.942l.302.952A4 4 0 1 1 5 6.92V8a5 5 0 1 0 4.244-5.944l.302.952A4 4 0 1 1 4 7.92V6.428l-.319.094v-3.52z' fill='%23C5C5C5'/%3E%3C/svg%3E");
+        }
+    </style>
+</head>
+<body>
+    <div class="section-header">
+        <h1>Device Details: {{DEVICE_NAME}}</h1>
+        <button id="refreshDevice" class="refresh-button">Refresh</button>
+    </div>
+    
+    <div class="section">
+        <h2>Device Properties</h2>
+        {{DEVICE_PROPERTIES}}
+    </div>
+    
+    <div class="section">
+        <div class="section-header">
+            <h2>WiFi Networks</h2>
+            <button id="refreshWifi" class="refresh-button">Refresh</button>
+        </div>
+        {{WIFI_NETWORKS}}
+    </div>
+    
+    <div class="section">
+        <button id="setupButton">Setup VSCode tasks.json and launch.json</button>
+    </div>
+
+    <script>
+        const vscode = acquireVsCodeApi();
+        
+        document.getElementById('setupButton').addEventListener('click', () => {
+            vscode.postMessage({
+                command: 'setupTasksAndLaunch'
+            });
+        });
+
+        document.getElementById('refreshDevice').addEventListener('click', () => {
+            vscode.postMessage({
+                command: 'refreshDevice'
+            });
+        });
+
+        document.getElementById('refreshWifi').addEventListener('click', () => {
+            vscode.postMessage({
+                command: 'refreshWifi'
+            });
+        });
+
+        // Add event listeners for disconnect buttons
+        document.querySelectorAll('.disconnect-wifi').forEach(button => {
+            button.addEventListener('click', (event) => {
+                const ssid = event.target.getAttribute('data-ssid');
+                vscode.postMessage({
+                    command: 'disconnectWifi',
+                    ssid: ssid
+                });
+            });
+        });
+    </script>
+</body>
+</html>

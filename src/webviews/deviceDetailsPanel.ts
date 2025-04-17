@@ -1,4 +1,6 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
 import { Device, WiFiNetwork, mockWiFiNetworks } from '../models/device';
 
 export class DeviceDetailsPanel {
@@ -6,7 +8,9 @@ export class DeviceDetailsPanel {
     private readonly _panel: vscode.WebviewPanel;
     private readonly _extensionUri: vscode.Uri;
     private _device: Device;
+    private _wifiNetworks: WiFiNetwork[];
     private _disposables: vscode.Disposable[] = [];
+    private _refreshInterval: NodeJS.Timeout | undefined;
 
     public static createOrShow(extensionUri: vscode.Uri, device: Device) {
         const column = vscode.window.activeTextEditor
@@ -28,7 +32,7 @@ export class DeviceDetailsPanel {
             {
                 enableScripts: true,
                 localResourceRoots: [
-                    vscode.Uri.joinPath(extensionUri, 'media')
+                    vscode.Uri.joinPath(extensionUri, 'resources')
                 ]
             }
         );
@@ -40,9 +44,13 @@ export class DeviceDetailsPanel {
         this._panel = panel;
         this._extensionUri = extensionUri;
         this._device = device;
+        this._wifiNetworks = [...mockWiFiNetworks];
 
         // Set the webview's initial html content
         this._update();
+
+        // Set up background refresh
+        this._setupBackgroundRefresh();
 
         // Listen for when the panel is disposed
         // This happens when the user closes the panel or when the panel is closed programmatically
@@ -67,6 +75,18 @@ export class DeviceDetailsPanel {
                         vscode.window.showInformationMessage(`Setting up tasks.json and launch.json for ${this._device.name}`);
                         this._setupTasksAndLaunch();
                         return;
+                    case 'refreshDevice':
+                        vscode.window.showInformationMessage(`Refreshing device information for ${this._device.name}`);
+                        this._refreshDeviceInfo();
+                        return;
+                    case 'refreshWifi':
+                        vscode.window.showInformationMessage(`Refreshing WiFi networks for ${this._device.name}`);
+                        this._refreshWifiNetworks();
+                        return;
+                    case 'disconnectWifi':
+                        vscode.window.showInformationMessage(`Disconnecting from WiFi network: ${message.ssid}`);
+                        this._disconnectWifi(message.ssid);
+                        return;
                 }
             },
             null,
@@ -83,6 +103,12 @@ export class DeviceDetailsPanel {
     public dispose() {
         DeviceDetailsPanel.currentPanel = undefined;
 
+        // Clear the background refresh interval
+        if (this._refreshInterval) {
+            clearInterval(this._refreshInterval);
+            this._refreshInterval = undefined;
+        }
+
         // Clean up our resources
         this._panel.dispose();
 
@@ -94,6 +120,46 @@ export class DeviceDetailsPanel {
         }
     }
 
+    private _setupBackgroundRefresh() {
+        // Set up a refresh every 30 seconds
+        this._refreshInterval = setInterval(() => {
+            if (this._panel.visible) {
+                this._refreshDeviceInfo();
+                this._refreshWifiNetworks();
+            }
+        }, 30000);
+    }
+
+    private _refreshDeviceInfo() {
+        // In a real implementation, this would fetch updated device info from the device
+        // For now, we'll just simulate a refresh with a small delay
+        setTimeout(() => {
+            this._update();
+        }, 500);
+    }
+
+    private _refreshWifiNetworks() {
+        // In a real implementation, this would fetch updated WiFi networks from the device
+        // For now, we'll just simulate a refresh with a small delay and random signal strength changes
+        setTimeout(() => {
+            // Simulate changing signal strengths
+            this._wifiNetworks = this._wifiNetworks.map(network => ({
+                ...network,
+                signalStrength: Math.min(100, Math.max(0, network.signalStrength + (Math.random() * 10 - 5)))
+            }));
+            this._update();
+        }, 500);
+    }
+
+    private _disconnectWifi(ssid: string) {
+        // In a real implementation, this would send a command to the device to disconnect from the network
+        // For now, we'll just update our mock data
+        this._wifiNetworks = this._wifiNetworks.map(network => 
+            network.ssid === ssid ? { ...network, isConnected: false } : network
+        );
+        this._update();
+    }
+
     private _update() {
         const webview = this._panel.webview;
         this._panel.title = `Device: ${this._device.name}`;
@@ -101,8 +167,8 @@ export class DeviceDetailsPanel {
     }
 
     private _getHtmlForWebview(webview: vscode.Webview) {
-        // Get mock WiFi networks
-        const wifiNetworks = mockWiFiNetworks;
+        // Get WiFi networks
+        const wifiNetworks = this._wifiNetworks;
 
         // Create HTML for device properties table
         const devicePropertiesHtml = `
@@ -154,12 +220,17 @@ export class DeviceDetailsPanel {
                 ${wifiNetworks.map(network => `
                     <tr>
                         <td>${network.ssid}</td>
-                        <td>${network.isConnected ? '<span class="connected">Connected</span>' : 'Not Connected'}</td>
+                        <td>
+                            ${network.isConnected 
+                                ? `<span class="connected">Connected</span>
+                                   <button class="disconnect-button disconnect-wifi" data-ssid="${network.ssid}">Disconnect</button>` 
+                                : 'Not Connected'}
+                        </td>
                         <td>
                             <div class="signal-strength">
                                 <div class="signal-bar" style="width: ${network.signalStrength}%"></div>
                             </div>
-                            ${network.signalStrength}%
+                            ${Math.round(network.signalStrength)}%
                         </td>
                         <td>${network.secured ? 'Secured' : 'Open'}</td>
                     </tr>
@@ -167,101 +238,16 @@ export class DeviceDetailsPanel {
             </table>
         `;
 
-        return `<!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Device Details: ${this._device.name}</title>
-            <style>
-                body {
-                    font-family: var(--vscode-font-family);
-                    color: var(--vscode-foreground);
-                    background-color: var(--vscode-editor-background);
-                    padding: 20px;
-                }
-                h1, h2 {
-                    color: var(--vscode-editor-foreground);
-                    border-bottom: 1px solid var(--vscode-panel-border);
-                    padding-bottom: 10px;
-                }
-                table {
-                    border-collapse: collapse;
-                    width: 100%;
-                    margin-bottom: 20px;
-                }
-                th, td {
-                    text-align: left;
-                    padding: 8px;
-                    border: 1px solid var(--vscode-panel-border);
-                }
-                th {
-                    background-color: var(--vscode-editor-lineHighlightBackground);
-                }
-                tr:nth-child(even) {
-                    background-color: var(--vscode-editor-inactiveSelectionBackground);
-                }
-                .connected {
-                    color: var(--vscode-terminal-ansiGreen);
-                    font-weight: bold;
-                }
-                .signal-strength {
-                    width: 100px;
-                    height: 10px;
-                    background-color: var(--vscode-editor-background);
-                    border: 1px solid var(--vscode-panel-border);
-                    display: inline-block;
-                    margin-right: 10px;
-                }
-                .signal-bar {
-                    height: 100%;
-                    background-color: var(--vscode-terminal-ansiGreen);
-                }
-                button {
-                    background-color: var(--vscode-button-background);
-                    color: var(--vscode-button-foreground);
-                    border: none;
-                    padding: 8px 16px;
-                    cursor: pointer;
-                    font-size: 14px;
-                    border-radius: 2px;
-                }
-                button:hover {
-                    background-color: var(--vscode-button-hoverBackground);
-                }
-                .section {
-                    margin-bottom: 30px;
-                }
-            </style>
-        </head>
-        <body>
-            <h1>Device Details: ${this._device.name}</h1>
-            
-            <div class="section">
-                <h2>Device Properties</h2>
-                ${devicePropertiesHtml}
-            </div>
-            
-            <div class="section">
-                <h2>WiFi Networks</h2>
-                ${wifiNetworksHtml}
-            </div>
-            
-            <div class="section">
-                <button id="setupButton">Setup VSCode tasks.json and launch.json</button>
-            </div>
-
-            <script>
-                const vscode = acquireVsCodeApi();
-                
-                document.getElementById('setupButton').addEventListener('click', () => {
-                    vscode.postMessage({
-                        command: 'setupTasksAndLaunch'
-                    });
-                });
-            </script>
-        </body>
-        </html>`;
+        // Load the HTML template from the resources directory
+        const templatePath = path.join(this._extensionUri.fsPath, 'resources', 'device-details-template.html');
+        let templateHtml = fs.readFileSync(templatePath, 'utf8');
+        
+        // Replace placeholders with actual content
+        templateHtml = templateHtml.replace(/{{DEVICE_NAME}}/g, this._device.name)
+                                  .replace('{{DEVICE_PROPERTIES}}', devicePropertiesHtml)
+                                  .replace('{{WIFI_NETWORKS}}', wifiNetworksHtml);
+        
+        return templateHtml;
     }
 
     private _setupTasksAndLaunch() {

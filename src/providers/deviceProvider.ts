@@ -11,10 +11,6 @@ export class DeviceTreeItem extends vscode.TreeItem {
         this.description = device.type;
         this.contextValue = 'device';
         
-        // Set the icon for the device based on type
-        const iconType = device.type.toLowerCase().includes('raspberry pi') ? 'raspberry-pi' : 'jetson';
-        this.iconPath = new vscode.ThemeIcon(iconType === 'raspberry-pi' ? 'circuit-board' : 'server');
-        
         // Add a command to open the device details page when clicked
         this.command = {
             command: 'edge-developer-extension.openDeviceDetails',

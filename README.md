@@ -4,7 +4,7 @@ Edge Developer Extension helps developer manage connected Nvidia Jetson, Raspber
 
 ## Features
 
-1. Listing connected devices
+1. Listing connected devices. If the device is connected over USB, Ethernet, or WiFi you should be able to see it in the list
 2. Documentation Links
 3. Setting up Edge projects `launch.json` and `tasks.json`
 
