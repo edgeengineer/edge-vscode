@@ -1,8 +1,12 @@
-# edge-developer-extension README
+# Edge Developer Extension
 
-This is the README for your extension "edge-developer-extension". After writing up a brief description, we recommend including the following sections.
+Edge Developer Extension helps developer manage connected Nvidia Jetson, Raspberry Pi's and other EdgeOS devices. EdgeOS devices are connected over Ethernet over USB (by using USB host mode). We use a DHCP server to assign IP addresses to the devices and mDNS/Avahi to resolve the device names.
 
 ## Features
+
+1. Listing connected devices
+2. Documentation Links
+3. Setting up Edge projects `launch.json` and `tasks.json`
 
 Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
 
@@ -14,7 +18,7 @@ For example if there is an image subfolder under your extension project workspac
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+1. You need a VSCode engine that is >= 1.97.0
 
 ## Extension Settings
 
