@@ -13,6 +13,7 @@
     "workspaceContains:Package.swift"
   ],
   "main": "./dist/extension.js",
+  "extensionDependencies": ["swiftlang.swift-vscode"],
   "contributes": {
     "commands": [
       {
