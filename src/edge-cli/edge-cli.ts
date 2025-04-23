@@ -2,13 +2,20 @@ import { execFile, expandFilePathTilde, getErrorDescription } from "../utilities
 import * as fs from "fs/promises";
 
 export class EdgeCLI {
+    public version: string;
+
     constructor(
         public readonly path: string,
-    ) {}
+        version?: string,
+    ) {
+        this.version = version || '';
+    }
 
     static async create(): Promise<EdgeCLI> {
         const path = await EdgeCLI.getEdgePath();
-        return new EdgeCLI(path);
+        const cli = new EdgeCLI(path);
+        cli.version = await cli.getVersion();
+        return cli;
     }
 
     private static async getEdgePath(): Promise<string> {
@@ -45,5 +52,14 @@ export class EdgeCLI {
         } catch (error) {
             throw new Error(`Failed to find edge executable`);
         }
+    }
+
+    private async exec(args: string[]): Promise<string> {
+        const { stdout } = await execFile(this.path, args);
+        return stdout.trimEnd();
+    }
+
+    public async getVersion(): Promise<string> {
+        return await this.exec(["--version"]);
     }
 }

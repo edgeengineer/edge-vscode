@@ -49,6 +49,7 @@ export async function activate(
     }
 
     outputChannel.appendLine(`Discovered Edge CLI at path: ${edgeCLI.path}`);
+    outputChannel.appendLine(`Edge CLI version: ${edgeCLI.version}`);
   } catch (error) {
     const errorMessage = getErrorDescription(error);
     vscode.window.showErrorMessage(
