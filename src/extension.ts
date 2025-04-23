@@ -3,6 +3,7 @@
 import * as vscode from "vscode";
 import { getErrorDescription } from "./utilities/utilities";
 import { EdgeCLI } from "./edge-cli/edge-cli";
+import { SwiftExtensionApi } from "swiftlang.swift-vscode";
 
 export async function activate(
   context: vscode.ExtensionContext
@@ -19,7 +20,7 @@ export async function activate(
       outputChannel.show();
     }
 
-    const swiftExtension = vscode.extensions.getExtension(
+    const swiftExtension = vscode.extensions.getExtension<SwiftExtensionApi>(
       "swiftlang.swift-vscode"
     );
     if (!swiftExtension) {
@@ -31,6 +32,10 @@ export async function activate(
 
     const swiftAPI = await swiftExtension.activate();
     outputChannel.appendLine(`Swift API: ${swiftAPI}`);
+
+    if (!swiftAPI.workspaceContext) {
+      throw new Error("Swift API workspace context not found");
+    }
 
     const edgeCLI = await EdgeCLI.create();
     if (!edgeCLI) {
