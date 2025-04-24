@@ -3,7 +3,9 @@
 import * as vscode from "vscode";
 import { getErrorDescription } from "./utilities/utilities";
 import { EdgeCLI } from "./edge-cli/edge-cli";
-import { SwiftExtensionApi } from "swiftlang.swift-vscode";
+import type { SwiftExtensionApi } from "swiftlang.swift-vscode";
+import { EdgeWorkspaceContext } from "./EdgeWorkspaceContext";
+import { EdgeTaskProvider } from "./tasks/EdgeTaskProvider";
 
 export async function activate(
   context: vscode.ExtensionContext
@@ -37,6 +39,18 @@ export async function activate(
       throw new Error("Swift API workspace context not found");
     }
 
+    // Subscribe to folder changes in the Swift workspace context
+    const folderChangeDisposable = swiftAPI.workspaceContext.onDidChangeFolders(
+      ({ folder, operation }) => {
+        outputChannel.appendLine(`Swift folder change detected: ${operation}`);
+        if (folder) {
+          outputChannel.appendLine(`Folder: ${folder}`);
+        }
+      }
+    );
+    context.subscriptions.push(folderChangeDisposable);
+    outputChannel.appendLine("Listening for Swift folder changes...");
+
     const edgeCLI = await EdgeCLI.create();
     if (!edgeCLI) {
       const choice = await vscode.window.showErrorMessage(
@@ -55,24 +69,25 @@ export async function activate(
 
     outputChannel.appendLine(`Discovered Edge CLI at path: ${edgeCLI.path}`);
     outputChannel.appendLine(`Edge CLI version: ${edgeCLI.version}`);
+
+    // Create the EdgeWorkspaceContext with all the necessary components
+    const edgeWorkspaceContext = new EdgeWorkspaceContext(
+      context,
+      outputChannel,
+      edgeCLI,
+      swiftAPI.workspaceContext
+    );
+
+    // Store the EdgeWorkspaceContext in the extension context for later use
+    context.subscriptions.push(edgeWorkspaceContext);
+    context.subscriptions.push(EdgeTaskProvider.register(edgeWorkspaceContext));
+
+    outputChannel.appendLine("EdgeOS extension activated successfully.");
   } catch (error) {
     const errorMessage = getErrorDescription(error);
     vscode.window.showErrorMessage(
       `Activating Edge extension failed: ${errorMessage}`
     );
-  }
-}
-
-async function createEdgeCLI(
-  outputChannel: vscode.OutputChannel
-): Promise<EdgeCLI | undefined> {
-  try {
-    return await EdgeCLI.create();
-  } catch (error) {
-    outputChannel.appendLine(
-      `Failed to create Edge CLI: ${getErrorDescription(error)}`
-    );
-    return undefined;
   }
 }
 

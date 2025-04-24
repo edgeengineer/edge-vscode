@@ -7,18 +7,60 @@
     "vscode": "^1.96.0"
   },
   "categories": [
-    "Other"
+    "Debuggers"
   ],
   "activationEvents": [
     "workspaceContains:Package.swift"
   ],
   "main": "./dist/extension.js",
-  "extensionDependencies": ["swiftlang.swift-vscode"],
+  "extensionDependencies": [
+    "swiftlang.swift-vscode"
+  ],
   "contributes": {
     "commands": [
       {
         "command": "edgeos.helloWorld",
         "title": "Hello World"
+      }
+    ],
+    "debuggers": [
+      {
+        "type": "edge",
+        "label": "EdgeOS Debugger",
+        "configurationAttributes": {
+          "launch": {
+            "required": [
+              "target"
+            ],
+            "properties": {
+              "target": {
+                "type": "string",
+                "description": "The target to launch."
+              }
+            }
+          }
+        }
+      }
+    ],
+    "taskDefinitions": [
+      {
+        "type": "edge",
+        "required": [
+          "args"
+        ],
+        "properties": {
+          "args": {
+            "description": "The arguments to pass to the Edge CLI.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "cwd": {
+              "description": "The folder to run the task in.",
+              "type": "string"
+            }
+          }
+        }
       }
     ]
   },
