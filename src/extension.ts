@@ -7,6 +7,8 @@ import type { SwiftExtensionApi } from "swiftlang.swift-vscode";
 import { EdgeWorkspaceContext } from "./EdgeWorkspaceContext";
 import { EdgeTaskProvider } from "./tasks/EdgeTaskProvider";
 import { DocumentationProvider } from "./sidebar/DocumentationProvider";
+import { DevicesProvider } from "./sidebar/DevicesProvider";
+import { DeviceManager } from "./models/DeviceManager";
 
 export async function activate(
   context: vscode.ExtensionContext
@@ -22,6 +24,54 @@ export async function activate(
     if (context.extensionMode === vscode.ExtensionMode.Development) {
       outputChannel.show();
     }
+
+    // Create the DeviceManager
+    const deviceManager = new DeviceManager();
+
+    // Register the devices provider
+    const devicesProvider = new DevicesProvider(deviceManager);
+    vscode.window.registerTreeDataProvider("edgeDevices", devicesProvider);
+
+    // Register device-related commands
+    context.subscriptions.push(
+      vscode.commands.registerCommand("edgeDevices.addDevice", async () => {
+        const address = await vscode.window.showInputBox({
+          placeHolder: "hostname or hostname:port",
+          prompt: "Enter the address of the Edge device",
+        });
+
+        if (address) {
+          try {
+            await deviceManager.addDevice(address);
+            vscode.window.showInformationMessage(
+              `Device ${address} added successfully`
+            );
+          } catch (error) {
+            vscode.window.showErrorMessage(
+              `Failed to add device: ${getErrorDescription(error)}`
+            );
+          }
+        }
+      }),
+
+      vscode.commands.registerCommand(
+        "edgeDevices.deleteDevice",
+        async (item) => {
+          if (item?.device) {
+            try {
+              await deviceManager.deleteDevice(item.device.id);
+              vscode.window.showInformationMessage(
+                `Device ${item.device.address} removed`
+              );
+            } catch (error) {
+              vscode.window.showErrorMessage(
+                `Failed to remove device: ${getErrorDescription(error)}`
+              );
+            }
+          }
+        }
+      )
+    );
 
     // Register the documentation provider
     const documentationProvider = new DocumentationProvider();
