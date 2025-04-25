@@ -38,10 +38,6 @@
       {
         "command": "edgeos.helloWorld",
         "title": "Hello World"
-      },
-      {
-        "command": "edge.openDocumentation",
-        "title": "Open Documentation"
       }
     ],
     "debuggers": [

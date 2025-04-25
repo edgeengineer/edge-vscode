@@ -9,9 +9,9 @@ export class DocumentationItem extends vscode.TreeItem {
     super(label, vscode.TreeItemCollapsibleState.None);
     this.tooltip = `Open ${label}`;
     this.command = {
-      command: "edge.openDocumentation",
+      command: "vscode.open",
       title: "Open Documentation",
-      arguments: [url],
+      arguments: [vscode.Uri.parse(url)],
     };
     this.iconPath = new vscode.ThemeIcon(iconId);
     this.contextValue = "documentationLink";

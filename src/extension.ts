@@ -30,11 +30,6 @@ export async function activate(
       documentationProvider
     );
 
-    // Register the open documentation command
-    vscode.commands.registerCommand("edge.openDocumentation", (url: string) => {
-      vscode.env.openExternal(vscode.Uri.parse(url));
-    });
-
     const swiftExtension = vscode.extensions.getExtension<SwiftExtensionApi>(
       "swiftlang.swift-vscode"
     );
