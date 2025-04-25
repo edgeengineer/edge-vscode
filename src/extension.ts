@@ -6,6 +6,7 @@ import { EdgeCLI } from "./edge-cli/edge-cli";
 import type { SwiftExtensionApi } from "swiftlang.swift-vscode";
 import { EdgeWorkspaceContext } from "./EdgeWorkspaceContext";
 import { EdgeTaskProvider } from "./tasks/EdgeTaskProvider";
+import { DocumentationProvider } from "./sidebar/DocumentationProvider";
 
 export async function activate(
   context: vscode.ExtensionContext
@@ -21,6 +22,18 @@ export async function activate(
     if (context.extensionMode === vscode.ExtensionMode.Development) {
       outputChannel.show();
     }
+
+    // Register the documentation provider
+    const documentationProvider = new DocumentationProvider();
+    vscode.window.registerTreeDataProvider(
+      "edgeDocumentation",
+      documentationProvider
+    );
+
+    // Register the open documentation command
+    vscode.commands.registerCommand("edge.openDocumentation", (url: string) => {
+      vscode.env.openExternal(vscode.Uri.parse(url));
+    });
 
     const swiftExtension = vscode.extensions.getExtension<SwiftExtensionApi>(
       "swiftlang.swift-vscode"

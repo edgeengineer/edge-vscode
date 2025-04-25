@@ -1,7 +1,7 @@
 {
-  "name": "edgeos",
+  "name": "edge-vscode",
   "displayName": "Edge",
-  "description": "",
+  "description": "Build and debug EdgeOS applications with Visual Studio Code",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.96.0"
@@ -17,10 +17,31 @@
     "swiftlang.swift-vscode"
   ],
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "edge-explorer",
+          "title": "Edge",
+          "icon": "resources/logo.svg"
+        }
+      ]
+    },
+    "views": {
+      "edge-explorer": [
+        {
+          "id": "edgeDocumentation",
+          "name": "Documentation"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "edgeos.helloWorld",
         "title": "Hello World"
+      },
+      {
+        "command": "edge.openDocumentation",
+        "title": "Open Documentation"
       }
     ],
     "debuggers": [
