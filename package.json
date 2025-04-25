@@ -34,12 +34,17 @@
         }
       ]
     },
-    "commands": [
-      {
-        "command": "edgeos.helloWorld",
-        "title": "Hello World"
+    "commands": [],
+    "configuration": {
+      "title": "EdgeOS",
+      "properties": {
+        "edgeos.cliPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the Edge CLI executable. Leave empty for automatic detection."
+        }
       }
-    ],
+    },
     "debuggers": [
       {
         "type": "edge",

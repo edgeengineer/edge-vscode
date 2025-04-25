@@ -30,6 +30,23 @@ export async function activate(
       documentationProvider
     );
 
+    // Listen for configuration changes to the CLI path
+    context.subscriptions.push(
+      vscode.workspace.onDidChangeConfiguration((e) => {
+        if (e.affectsConfiguration("edgeos.cliPath")) {
+          const message =
+            "EdgeOS: CLI path has been changed. Reload window for changes to take effect.";
+          vscode.window
+            .showInformationMessage(message, "Reload Window")
+            .then((selection) => {
+              if (selection === "Reload Window") {
+                vscode.commands.executeCommand("workbench.action.reloadWindow");
+              }
+            });
+        }
+      })
+    );
+
     const swiftExtension = vscode.extensions.getExtension<SwiftExtensionApi>(
       "swiftlang.swift-vscode"
     );
@@ -61,11 +78,23 @@ export async function activate(
 
     const edgeCLI = await EdgeCLI.create();
     if (!edgeCLI) {
+      const config = vscode.workspace.getConfiguration("edgeos");
+      const configuredPath = config.get<string>("cliPath");
+
+      const options = ["Configure Path", "View Installation Instructions"];
       const choice = await vscode.window.showErrorMessage(
-        "Unable to autmoatically discover your Edge CLI installation.",
-        "View Installation Instructions"
+        configuredPath && configuredPath.trim() !== ""
+          ? `The configured Edge CLI path "${configuredPath}" is not accessible or executable.`
+          : "Unable to automatically discover your Edge CLI installation.",
+        ...options
       );
-      if (choice === "View Installation Instructions") {
+
+      if (choice === "Configure Path") {
+        await vscode.commands.executeCommand(
+          "workbench.action.openSettings",
+          "edgeos.cliPath"
+        );
+      } else if (choice === "View Installation Instructions") {
         vscode.env.openExternal(
           vscode.Uri.parse(
             "https://github.com/apache-edge/edge-agent/blob/main/README.md"
