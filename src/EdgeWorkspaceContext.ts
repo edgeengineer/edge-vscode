@@ -27,6 +27,8 @@ const _typeCheck: VerifyFolderOperation = FolderOperation;
 
 export class EdgeWorkspaceContext implements vscode.Disposable {
   public folders: EdgeFolderContext[] = [];
+  private _onDidChangePackage = new vscode.EventEmitter<EdgeFolderContext>();
+  public readonly onDidChangePackage = this._onDidChangePackage.event;
 
   constructor(
     public readonly context: vscode.ExtensionContext,
@@ -43,6 +45,7 @@ export class EdgeWorkspaceContext implements vscode.Disposable {
   dispose(): void {
     this.folders.forEach((folder) => folder.dispose());
     this.folders.length = 0;
+    this._onDidChangePackage.dispose();
   }
 
   /**
@@ -81,6 +84,12 @@ export class EdgeWorkspaceContext implements vscode.Disposable {
         // Ensure we have an EdgeFolderContext for the folder
         const edgeFolder = this.getOrCreateFolderContext(folder);
 
+        // Emit an event indicating the package was updated
+        this._onDidChangePackage.fire(edgeFolder);
+
+        // Refresh debug configurations
+        this.refreshDebugConfigurations();
+
         break;
       }
       case FolderOperation.remove: {
@@ -89,6 +98,9 @@ export class EdgeWorkspaceContext implements vscode.Disposable {
         if (edgeFolder) {
           edgeFolder.dispose();
           this.folders.splice(this.folders.indexOf(edgeFolder), 1);
+
+          // Refresh debug configurations after removing a folder
+          this.refreshDebugConfigurations();
         }
         break;
       }
@@ -97,5 +109,16 @@ export class EdgeWorkspaceContext implements vscode.Disposable {
         return;
       }
     }
+  }
+
+  /**
+   * Refresh the debug configurations in VS Code
+   */
+  private refreshDebugConfigurations(): void {
+    vscode.commands.executeCommand("edge.refreshDebugConfigurations");
+
+    this.output.appendLine(
+      "Swift package updated, refreshing debug configurations"
+    );
   }
 }

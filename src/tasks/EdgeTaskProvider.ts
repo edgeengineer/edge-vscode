@@ -109,7 +109,7 @@ export class EdgeTaskProvider implements vscode.TaskProvider {
     const task = new vscode.Task(
       config,
       vscode.TaskScope.Workspace,
-      `Edge: Run ${product.name}`,
+      `Run ${product.name}`,
       "edge",
       new vscode.CustomExecution(
         async (
@@ -123,6 +123,9 @@ export class EdgeTaskProvider implements vscode.TaskProvider {
           if (currentDevice) {
             args.push("--agent", currentDevice.address);
           }
+
+          // Add --debug parameter for debugging
+          args.push("--debug");
 
           return new EdgeTaskTerminal(this.edgeCLI, args, config.cwd.fsPath);
         }
@@ -161,6 +164,9 @@ export class EdgeTaskProvider implements vscode.TaskProvider {
           if (currentDevice) {
             args.push("--agent", currentDevice.address);
           }
+
+          // Add --debug parameter for debugging
+          args.push("--debug");
 
           return new EdgeTaskTerminal(
             this.edgeCLI,

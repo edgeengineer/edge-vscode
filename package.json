@@ -10,7 +10,10 @@
     "Debuggers"
   ],
   "activationEvents": [
-    "workspaceContains:Package.swift"
+    "workspaceContains:Package.swift",
+    "onDebug",
+    "onDebugDynamicConfigurations:edge",
+    "onDebugResolve:edge"
   ],
   "main": "./dist/extension.js",
   "extensionDependencies": [
@@ -53,6 +56,16 @@
         "command": "edgeDevices.selectDevice",
         "title": "Set as Current Device",
         "icon": "$(check)"
+      },
+      {
+        "command": "edge.refreshDebugConfigurations",
+        "title": "Refresh Debug Configurations",
+        "category": "Edge"
+      },
+      {
+        "command": "edge.configureSwiftSdkPath",
+        "title": "Configure Swift SDK Path",
+        "category": "Edge"
       }
     ],
     "menus": {
@@ -84,6 +97,11 @@
           "default": "",
           "description": "Path to the Edge CLI executable. Leave empty for automatic detection."
         },
+        "edgeos.swiftSdkPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the EdgeOS Swift SDK artifact bundle. Required for debugging. This setting will be removed once the Edge CLI is capable of managing the SDK. This MUST point to the swift-6.0.3-RELEASE_static-linux-0.0.1 SDK."
+        },
         "edgeos.devices": {
           "type": "array",
           "default": [],
@@ -114,18 +132,75 @@
         "type": "edge",
         "label": "EdgeOS Debugger",
         "configurationAttributes": {
-          "launch": {
+          "attach": {
             "required": [
               "target"
             ],
             "properties": {
               "target": {
                 "type": "string",
-                "description": "The target to launch."
+                "description": "The Swift package target to debug."
+              },
+              "cwd": {
+                "type": "string",
+                "description": "The working directory for the debug session."
+              },
+              "agent": {
+                "type": "string",
+                "description": "The Edge agent address (hostname:port) to connect to."
+              },
+              "preLaunchTask": {
+                "type": "string",
+                "description": "Task to run before starting the debug session."
+              },
+              "initCommands": {
+                "type": "array",
+                "description": "LLDB commands executed upon debugger startup prior to creating the LLDB target.",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "attachCommands": {
+                "type": "array",
+                "description": "LLDB commands that execute in place of the standard attach mechanism. Used for custom attach scenarios such as remote debugging.",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "preRunCommands": {
+                "type": "array",
+                "description": "LLDB commands executed just before attaching, after the LLDB target has been created.",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "stopCommands": {
+                "type": "array",
+                "description": "LLDB commands executed just after each stop.",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "gdb-remote-hostname": {
+                "type": "string",
+                "description": "Hostname for remote debugging with GDB protocol."
+              },
+              "gdb-remote-port": {
+                "type": "integer",
+                "description": "Port for remote debugging with GDB protocol."
               }
             }
           }
-        }
+        },
+        "initialConfigurations": [
+          {
+            "type": "edge",
+            "request": "attach",
+            "name": "Debug Edge Application",
+            "target": "${workspaceFolderBasename}",
+            "cwd": "${workspaceFolder}"
+          }
+        ]
       }
     ],
     "taskDefinitions": [

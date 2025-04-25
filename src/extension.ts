@@ -9,6 +9,7 @@ import { EdgeTaskProvider } from "./tasks/EdgeTaskProvider";
 import { DocumentationProvider } from "./sidebar/DocumentationProvider";
 import { DevicesProvider } from "./sidebar/DevicesProvider";
 import { DeviceManager } from "./models/DeviceManager";
+import { EdgeDebugConfigurationProvider } from "./debugger/EdgeDebugConfigurationProvider";
 
 export async function activate(
   context: vscode.ExtensionContext
@@ -87,6 +88,16 @@ export async function activate(
               );
             }
           }
+        }
+      ),
+
+      vscode.commands.registerCommand(
+        "edge.configureSwiftSdkPath",
+        async () => {
+          await vscode.commands.executeCommand(
+            "workbench.action.openSettings",
+            "edgeos.swiftSdkPath"
+          );
         }
       )
     );
@@ -185,9 +196,50 @@ export async function activate(
 
     // Store the EdgeWorkspaceContext in the extension context for later use
     context.subscriptions.push(edgeWorkspaceContext);
+
+    // Register the task provider
     context.subscriptions.push(
       EdgeTaskProvider.register(edgeWorkspaceContext, deviceManager)
     );
+
+    // Register the debug configuration providers
+    const debugProviders = EdgeDebugConfigurationProvider.register(
+      edgeWorkspaceContext,
+      outputChannel,
+      deviceManager
+    );
+    context.subscriptions.push(...debugProviders);
+
+    // Add command to refresh debug configurations
+    const refreshDebugConfigsCommand = vscode.commands.registerCommand(
+      "edge.refreshDebugConfigurations",
+      () => {
+        vscode.commands.executeCommand("workbench.action.debug.configure");
+      }
+    );
+    context.subscriptions.push(refreshDebugConfigsCommand);
+
+    // Check if Swift SDK path is set
+    const config = vscode.workspace.getConfiguration("edgeos");
+    const sdkPath = config.get<string>("swiftSdkPath");
+    if (!sdkPath || sdkPath.trim() === "") {
+      outputChannel.appendLine(
+        "Swift SDK path is not set. Debugging may not work properly."
+      );
+
+      // Show notification during activation
+      const actions = ["Configure Now", "Later"];
+      vscode.window
+        .showWarningMessage(
+          "EdgeOS Swift SDK path is not set. This is required for debugging EdgeOS applications.",
+          ...actions
+        )
+        .then((selection) => {
+          if (selection === "Configure Now") {
+            vscode.commands.executeCommand("edge.configureSwiftSdkPath");
+          }
+        });
+    }
 
     outputChannel.appendLine("EdgeOS extension activated successfully.");
   } catch (error) {
