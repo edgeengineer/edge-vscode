@@ -48,6 +48,11 @@
         "command": "edgeDevices.deleteDevice",
         "title": "Remove Device",
         "icon": "$(trash)"
+      },
+      {
+        "command": "edgeDevices.selectDevice",
+        "title": "Set as Current Device",
+        "icon": "$(check)"
       }
     ],
     "menus": {
@@ -61,6 +66,11 @@
       "view/item/context": [
         {
           "command": "edgeDevices.deleteDevice",
+          "when": "view == edgeDevices && viewItem == device",
+          "group": "inline"
+        },
+        {
+          "command": "edgeDevices.selectDevice",
           "when": "view == edgeDevices && viewItem == device",
           "group": "inline"
         }
@@ -91,6 +101,11 @@
               }
             }
           }
+        },
+        "edgeos.currentDevice": {
+          "type": "string",
+          "default": null,
+          "description": "ID of the currently selected Edge device"
         }
       }
     },

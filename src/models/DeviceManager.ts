@@ -7,8 +7,14 @@ import { v7 as uuidv7 } from "uuid";
  */
 export class DeviceManager {
   private static readonly CONFIG_KEY = "edgeos.devices";
+  private static readonly CURRENT_DEVICE_KEY = "edgeos.currentDevice";
   private _onDevicesChanged = new vscode.EventEmitter<void>();
   readonly onDevicesChanged = this._onDevicesChanged.event;
+
+  private _onCurrentDeviceChanged = new vscode.EventEmitter<
+    string | undefined
+  >();
+  readonly onCurrentDeviceChanged = this._onCurrentDeviceChanged.event;
 
   constructor() {}
 
@@ -22,6 +28,48 @@ export class DeviceManager {
         DeviceManager.CONFIG_KEY
       ) || [];
     return devices.map((d) => new Device(d.id, d.address));
+  }
+
+  /**
+   * Get the current active device ID
+   */
+  getCurrentDeviceId(): string | undefined {
+    const config = vscode.workspace.getConfiguration();
+    return config.get<string>(DeviceManager.CURRENT_DEVICE_KEY);
+  }
+
+  /**
+   * Get the current active device
+   */
+  getCurrentDevice(): Device | undefined {
+    const currentId = this.getCurrentDeviceId();
+    if (!currentId) {
+      return undefined;
+    }
+
+    const device = this.getDevices().find((d) => d.id === currentId);
+    return device;
+  }
+
+  /**
+   * Set the current active device
+   */
+  async setCurrentDevice(deviceId: string | undefined): Promise<void> {
+    const config = vscode.workspace.getConfiguration();
+
+    // If trying to set a device, make sure it exists
+    if (deviceId && !this.getDevices().some((d) => d.id === deviceId)) {
+      throw new Error(`Device with ID ${deviceId} not found`);
+    }
+
+    await config.update(
+      DeviceManager.CURRENT_DEVICE_KEY,
+      deviceId,
+      vscode.ConfigurationTarget.Global
+    );
+
+    this._onCurrentDeviceChanged.fire(deviceId);
+    this._onDevicesChanged.fire();
   }
 
   /**
@@ -48,7 +96,13 @@ export class DeviceManager {
       devices,
       vscode.ConfigurationTarget.Global
     );
-    this._onDevicesChanged.fire();
+
+    // If this is the first device, automatically set it as current
+    if (devices.length === 1) {
+      await this.setCurrentDevice(newDevice.id);
+    } else {
+      this._onDevicesChanged.fire();
+    }
 
     return new Device(newDevice.id, newDevice.address);
   }
@@ -75,6 +129,18 @@ export class DeviceManager {
       updatedDevices,
       vscode.ConfigurationTarget.Global
     );
-    this._onDevicesChanged.fire();
+
+    // If we deleted the current device, clear the current device
+    const currentDeviceId = this.getCurrentDeviceId();
+    if (currentDeviceId === deviceId) {
+      // Set to another device if available, otherwise clear it
+      if (updatedDevices.length > 0) {
+        await this.setCurrentDevice(updatedDevices[0].id);
+      } else {
+        await this.setCurrentDevice(undefined);
+      }
+    } else {
+      this._onDevicesChanged.fire();
+    }
   }
 }

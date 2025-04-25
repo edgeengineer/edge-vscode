@@ -3,12 +3,24 @@ import { Device } from "../models/Device";
 import { DeviceManager } from "../models/DeviceManager";
 
 export class DeviceTreeItem extends vscode.TreeItem {
-  constructor(public readonly device: Device) {
+  constructor(
+    public readonly device: Device,
+    private readonly isCurrentDevice: boolean
+  ) {
     super(device.address, vscode.TreeItemCollapsibleState.None);
     this.tooltip = `Device: ${device.id}`;
-    this.description = device.address;
-    this.iconPath = new vscode.ThemeIcon("vm-running");
-    this.contextValue = "device";
+    this.description = isCurrentDevice ? "Current Device" : "";
+    this.iconPath = new vscode.ThemeIcon(
+      isCurrentDevice ? "check" : "vm-running"
+    );
+    this.contextValue = isCurrentDevice ? "currentDevice" : "device";
+
+    // Add a command to select this device when clicked
+    this.command = {
+      command: "edgeDevices.selectDevice",
+      title: "Select Device",
+      arguments: [this],
+    };
   }
 }
 
@@ -27,6 +39,11 @@ export class DevicesProvider
     this.deviceManager.onDevicesChanged(() => {
       this.refresh();
     });
+
+    // Listen for current device changes
+    this.deviceManager.onCurrentDeviceChanged(() => {
+      this.refresh();
+    });
   }
 
   refresh(): void {
@@ -42,8 +59,12 @@ export class DevicesProvider
       return Promise.resolve([]);
     } else {
       const devices = this.deviceManager.getDevices();
+      const currentDeviceId = this.deviceManager.getCurrentDeviceId();
+
       return Promise.resolve(
-        devices.map((device) => new DeviceTreeItem(device))
+        devices.map(
+          (device) => new DeviceTreeItem(device, device.id === currentDeviceId)
+        )
       );
     }
   }

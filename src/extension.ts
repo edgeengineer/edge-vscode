@@ -70,6 +70,24 @@ export async function activate(
             }
           }
         }
+      ),
+
+      vscode.commands.registerCommand(
+        "edgeDevices.selectDevice",
+        async (item) => {
+          if (item?.device) {
+            try {
+              await deviceManager.setCurrentDevice(item.device.id);
+              vscode.window.showInformationMessage(
+                `${item.device.address} set as current device`
+              );
+            } catch (error) {
+              vscode.window.showErrorMessage(
+                `Failed to set current device: ${getErrorDescription(error)}`
+              );
+            }
+          }
+        }
       )
     );
 
@@ -167,7 +185,9 @@ export async function activate(
 
     // Store the EdgeWorkspaceContext in the extension context for later use
     context.subscriptions.push(edgeWorkspaceContext);
-    context.subscriptions.push(EdgeTaskProvider.register(edgeWorkspaceContext));
+    context.subscriptions.push(
+      EdgeTaskProvider.register(edgeWorkspaceContext, deviceManager)
+    );
 
     outputChannel.appendLine("EdgeOS extension activated successfully.");
   } catch (error) {
