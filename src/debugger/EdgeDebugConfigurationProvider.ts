@@ -8,6 +8,9 @@ import { getErrorDescription } from "../utilities/utilities";
 export const EDGE_LAUNCH_CONFIG_TYPE = "edge";
 // Default debug port used by Edge agent
 export const DEFAULT_DEBUG_PORT = 4242;
+// Debugger type to use - can be "lldb-dap" or "codelldb"
+export type DebuggerType = "lldb-dap" | "codelldb";
+export const DEBUGGER_TYPE: DebuggerType = "codelldb";
 
 export class EdgeDebugConfigurationProvider
   implements vscode.DebugConfigurationProvider
@@ -129,24 +132,6 @@ export class EdgeDebugConfigurationProvider
       return null; // Cancel debugging
     }
 
-    // Set the correct debugger type
-    debugConfiguration.type = "lldb-dap";
-    debugConfiguration.request = "attach";
-
-    // Add the current device address to the debug configuration
-    debugConfiguration.agent = currentDevice.address;
-
-    // Ensure we have a preLaunchTask to build the target if not specified
-    if (!debugConfiguration.preLaunchTask && debugConfiguration.target) {
-      debugConfiguration.preLaunchTask = `edge: Run ${debugConfiguration.target}`;
-    }
-
-    // Check the format of the SDK bundle to ensure we're using the right paths
-    const sdkSubPath =
-      "swift-6.0.3-RELEASE_static-linux-0.0.1/swift-linux-musl/musl-1.2.5.sdk/aarch64";
-    const moduleSubPath =
-      "swift-6.0.3-RELEASE_static-linux-0.0.1/swift-linux-musl/musl-1.2.5.sdk/aarch64/usr/lib/swift_static/linux-static";
-
     // Build debug target path
     const targetBasePath = path.join(
       folder?.uri.fsPath || "",
@@ -154,38 +139,68 @@ export class EdgeDebugConfigurationProvider
     );
 
     // Get the device address and ensure it has the correct debug port
-    // TODO: Get port from Run command output instead of hardcoding to 4242
     const remoteAddress = this.ensureDebugPort(currentDevice.address);
 
-    // For remote debugging with GDB protocol using attachCommands (this replaces the standard attach logic)
-    // This is critical for EdgeOS debugging as we need custom attach commands
-    const attachCommands = [
-      // Create the target
-      `target create ${targetBasePath}/${debugConfiguration.target}`,
+    // Check the format of the SDK bundle to ensure we're using the right paths
+    const sdkSubPath =
+      "swift-6.0.3-RELEASE_static-linux-0.0.1/swift-linux-musl/musl-1.2.5.sdk/aarch64";
+    const moduleSubPath =
+      "swift-6.0.3-RELEASE_static-linux-0.0.1/swift-linux-musl/musl-1.2.5.sdk/aarch64/usr/lib/swift_static/linux-static";
 
-      // Set SDK path
-      `settings set target.sdk-path "${path.join(sdkPath, sdkSubPath)}"`,
+    // Set up debug configuration based on debugger type
+    if (DEBUGGER_TYPE === "lldb-dap") {
+      // lldb-dap configuration
+      debugConfiguration.type = "lldb-dap";
+      debugConfiguration.request = "attach";
 
-      // Set Swift module search paths
-      `settings set target.swift-module-search-paths "${path.join(
-        sdkPath,
-        moduleSubPath
-      )}"`,
+      // Set the SDK path and module search paths in initCommands
+      const initCommands = [
+        // Set SDK path
+        `settings set target.sdk-path "${path.join(sdkPath, sdkSubPath)}"`,
 
-      // Connect to remote GDB server
-      `gdb-remote ${remoteAddress}`,
-    ];
+        // Set Swift module search paths
+        `settings set target.swift-module-search-paths "${path.join(
+          sdkPath,
+          moduleSubPath
+        )}"`,
+      ];
 
-    // Add attachCommands to the debug configuration
-    // According to LLDB DAP docs, these commands replace the standard attach logic
-    debugConfiguration.attachCommands = attachCommands;
+      debugConfiguration.initCommands = initCommands;
+      debugConfiguration.attachCommands = [
+        `target create ${targetBasePath}/${debugConfiguration.target}`,
+        `gdb-remote ${remoteAddress}`,
+      ];
 
-    // We can still use initCommands for commands that need to run before creating the target
-    debugConfiguration.initCommands = [
-      // Optional initialization commands
-      "settings set plugin.symbol-locator.enable true",
-      "settings set target.prefer-dynamic-value run-target",
-    ];
+      // TODO: Don't hardcode this path - once the Edge CLI is capable of managing the SDK,
+      // this path will be dynamically generated
+      // debugConfiguration.debugAdapterExecutable =
+      // ("/Library/Developer/Toolchains/swift-6.0.3-RELEASE.xctoolchain/usr/bin/lldb-dap");
+    } else {
+      // Default to codelldb configuration
+      debugConfiguration.type = "lldb";
+      debugConfiguration.request = "launch";
+
+      // Add the current device address to the debug configuration
+      debugConfiguration.agent = currentDevice.address;
+
+      // Configure commands for CodeLLDB
+      debugConfiguration.targetCreateCommands = [
+        `target create ${targetBasePath}/${debugConfiguration.target}`,
+        `settings set target.sdk-path "${path.join(sdkPath, sdkSubPath)}"`,
+        `settings set target.swift-module-search-paths "${path.join(
+          sdkPath,
+          moduleSubPath
+        )}"`,
+      ];
+      debugConfiguration.processCreateCommands = [
+        `gdb-remote ${remoteAddress}`,
+      ];
+    }
+
+    // Ensure we have a preLaunchTask to build the target if not specified
+    if (!debugConfiguration.preLaunchTask && debugConfiguration.target) {
+      debugConfiguration.preLaunchTask = `edge: Run ${debugConfiguration.target}`;
+    }
 
     // Log configuration to the output channel
     this.outputChannel.appendLine("Resolved debug configuration:");
