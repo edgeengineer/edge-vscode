@@ -79,7 +79,7 @@
       "view/item/context": [
         {
           "command": "edgeDevices.deleteDevice",
-          "when": "view == edgeDevices && viewItem == device",
+          "when": "view == edgeDevices && (viewItem == device || viewItem == currentDevice)",
           "group": "inline"
         },
         {

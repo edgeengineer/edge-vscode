@@ -59,15 +59,23 @@ export async function activate(
         "edgeDevices.deleteDevice",
         async (item) => {
           if (item?.device) {
-            try {
-              await deviceManager.deleteDevice(item.device.id);
-              vscode.window.showInformationMessage(
-                `Device ${item.device.address} removed`
-              );
-            } catch (error) {
-              vscode.window.showErrorMessage(
-                `Failed to remove device: ${getErrorDescription(error)}`
-              );
+            const confirmed = await vscode.window.showWarningMessage(
+              `Are you sure you want to remove device ${item.device.address}?`,
+              { modal: true },
+              "Remove"
+            );
+
+            if (confirmed === "Remove") {
+              try {
+                await deviceManager.deleteDevice(item.device.id);
+                vscode.window.showInformationMessage(
+                  `Device ${item.device.address} removed`
+                );
+              } catch (error) {
+                vscode.window.showErrorMessage(
+                  `Failed to remove device: ${getErrorDescription(error)}`
+                );
+              }
             }
           }
         }
