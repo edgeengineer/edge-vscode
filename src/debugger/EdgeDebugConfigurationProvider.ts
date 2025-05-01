@@ -10,7 +10,7 @@ export const EDGE_LAUNCH_CONFIG_TYPE = "edge";
 export const DEFAULT_DEBUG_PORT = 4242;
 // Debugger type to use - can be "lldb-dap" or "codelldb"
 export type DebuggerType = "lldb-dap" | "codelldb";
-export const DEBUGGER_TYPE: DebuggerType = "codelldb";
+export const DEBUGGER_TYPE: DebuggerType = "lldb-dap";
 
 export class EdgeDebugConfigurationProvider
   implements vscode.DebugConfigurationProvider
@@ -142,10 +142,18 @@ export class EdgeDebugConfigurationProvider
     const remoteAddress = this.ensureDebugPort(currentDevice.address);
 
     // Check the format of the SDK bundle to ensure we're using the right paths
-    const sdkSubPath =
-      "swift-6.0.3-RELEASE_static-linux-0.0.1/swift-linux-musl/musl-1.2.5.sdk/aarch64";
+    const sdkSubPath = "";
     const moduleSubPath =
-      "swift-6.0.3-RELEASE_static-linux-0.0.1/swift-linux-musl/musl-1.2.5.sdk/aarch64/usr/lib/swift_static/linux-static";
+      "6.1-RELEASE_edgeos_aarch64/aarch64-unknown-linux-gnu/debian-bookworm.sdk/usr/lib/swift_static/linux";
+
+    // Create shared SDK path commands for both debugger types
+    const sdkPathCommands = [
+      `settings set target.sdk-path "${path.join(sdkPath, sdkSubPath)}"`,
+      `settings set target.swift-module-search-paths "${path.join(
+        sdkPath,
+        moduleSubPath
+      )}"`,
+    ];
 
     // Set up debug configuration based on debugger type
     if (DEBUGGER_TYPE === "lldb-dap") {
@@ -154,18 +162,7 @@ export class EdgeDebugConfigurationProvider
       debugConfiguration.request = "attach";
 
       // Set the SDK path and module search paths in initCommands
-      const initCommands = [
-        // Set SDK path
-        `settings set target.sdk-path "${path.join(sdkPath, sdkSubPath)}"`,
-
-        // Set Swift module search paths
-        `settings set target.swift-module-search-paths "${path.join(
-          sdkPath,
-          moduleSubPath
-        )}"`,
-      ];
-
-      debugConfiguration.initCommands = initCommands;
+      debugConfiguration.initCommands = sdkPathCommands;
       debugConfiguration.attachCommands = [
         `target create ${targetBasePath}/${debugConfiguration.target}`,
         `gdb-remote ${remoteAddress}`,
@@ -174,7 +171,7 @@ export class EdgeDebugConfigurationProvider
       // TODO: Don't hardcode this path - once the Edge CLI is capable of managing the SDK,
       // this path will be dynamically generated
       // debugConfiguration.debugAdapterExecutable =
-      // ("/Library/Developer/Toolchains/swift-6.0.3-RELEASE.xctoolchain/usr/bin/lldb-dap");
+      // ("/Library/Developer/Toolchains/swift-6.1-RELEASE.xctoolchain/usr/bin/lldb-dap");
     } else {
       // Default to codelldb configuration
       debugConfiguration.type = "lldb";
@@ -186,11 +183,7 @@ export class EdgeDebugConfigurationProvider
       // Configure commands for CodeLLDB
       debugConfiguration.targetCreateCommands = [
         `target create ${targetBasePath}/${debugConfiguration.target}`,
-        `settings set target.sdk-path "${path.join(sdkPath, sdkSubPath)}"`,
-        `settings set target.swift-module-search-paths "${path.join(
-          sdkPath,
-          moduleSubPath
-        )}"`,
+        ...sdkPathCommands,
       ];
       debugConfiguration.processCreateCommands = [
         `gdb-remote ${remoteAddress}`,
