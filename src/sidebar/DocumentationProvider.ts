@@ -30,24 +30,19 @@ export class DocumentationProvider
 
   private documentationLinks: DocumentationItem[] = [
     new DocumentationItem(
-      "Visit Documentation Website",
-      "https://edge.apache.org/docs",
+      "Visit Website",
+      "https://edge.engineer",
+      "globe"
+    ),
+    new DocumentationItem(
+      "Visit Docs",
+      "https://edge.engineer",
       "book"
     ),
     new DocumentationItem(
       "Visit GitHub",
-      "https://github.com/apache/edge",
+      "https://github.com/edgeengineer",
       "github"
-    ),
-    new DocumentationItem(
-      "Visit Forums",
-      "https://edge.apache.org/forums",
-      "comment-discussion"
-    ),
-    new DocumentationItem(
-      "Visit Support",
-      "https://edge.apache.org/support",
-      "question"
     ),
   ];
 
