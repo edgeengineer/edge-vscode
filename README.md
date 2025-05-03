@@ -1,71 +1,89 @@
-# edgeos README
+# Edge for VS Code
 
-This is the README for your extension "edgeos". After writing up a brief description, we recommend including the following sections.
+A Visual Studio Code extension for building, running, and debugging applications on EdgeOS devices.
+
+## Overview
+
+The Edge extension provides comprehensive integration with the Edge platform, allowing developers to build, run, and debug Swift applications for EdgeOS devices directly from Visual Studio Code. This extension streamlines the development workflow by managing device connections, providing convenient debugging configurations, and offering direct access to Edge documentation.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+### Device Management
+- **Device Explorer**: View and manage your EdgeOS devices in the sidebar
+- **One-Click Device Selection**: Easily switch between multiple devices for deployment and debugging (Note: currently only 1 device is supported)
+- **Auto Discovery**: Automatically detect EdgeOS devices on your network
 
-For example if there is an image subfolder under your extension project workspace:
+![Device Management](images/devices.png)
 
-\!\[feature X\]\(images/feature-x.png\)
+### Swift Integration
+- **Project Detection**: Automatic detection of Swift package projects
+- **Build and Run**: Build and deploy your Swift packages to EdgeOS devices with one command
+- **Task Integration**: EdgeOS tasks are fully integrated with VS Code's task system
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+![Swift Integration](images/swift-integration.png)
+
+### Debugging
+- **Debug Configuration Provider**: Automatically creates appropriate debug configurations for your Swift targets
+- **Remote Debugging**: Connect to remote EdgeOS devices for debugging
+- **LLDB Integration**: Full debugging support using LLDB with breakpoints, variable inspection, and more
+
+![Debugging](images/debugging.png)
+
+### Documentation
+- **Quick Access**: Access EdgeOS documentation directly from the extension
+- **Integrated Help**: Find answers to common questions without leaving your development environment
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+- Visual Studio Code 1.96.0 or newer
+- Swift for Visual Studio Code extension
+- Edge CLI installed and accessible
+- Swift SDK for EdgeOS (for debugging)
+
+## Installation
+
+1. Install the extension from the VS Code Marketplace
+2. Ensure the Edge CLI is installed (`edge --version` should work in your terminal)
+3. Configure the Swift SDK path if needed for debugging
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
 This extension contributes the following settings:
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+* `edgeos.cliPath`: Path to the Edge CLI executable. Leave empty for automatic detection.
+* `edgeos.swiftSdkPath`: Path to the EdgeOS Swift SDK artifact bundle (required for debugging).
+* `edgeos.devices`: List of Edge devices (managed by the extension).
+* `edgeos.currentDevice`: ID of the currently selected Edge device (managed by the extension).
+
+## Getting Started
+
+1. Open a Swift package project
+2. Add an EdgeOS device using the "+" button in the Edge Devices panel
+3. Select the device as your current device
+4. Use the Run or Debug buttons to deploy and run your application on the device
+
+## Debugging Your Applications
+
+1. Make sure you've configured your Swift SDK path via the settings
+2. Select your target device in the Devices panel
+3. Open the Debug panel and select "Debug Edge Application"
+4. Start debugging to deploy and connect to your application
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+- Swift SDK path must be configured manually for debugging
+- Debugging requires port 4242 to be accessible on the target device
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
+### 0.0.1
 
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
+- Initial release with basic device management, build and debugging support
 
 ---
 
-## Following extension guidelines
+## Feedback and Contributions
 
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
+Found a bug or have a feature request? Please open an issue on our [GitHub repository](https://github.com/edgeengineer/edge-vscode).
 
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+**Enjoy building with EdgeOS!**
