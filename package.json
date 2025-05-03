@@ -1,6 +1,6 @@
 {
   "name": "edge-vscode",
-  "displayName": "Edge.Engineer",
+  "displayName": "Edge Engineer",
   "description": "Build and debug EdgeOS applications with Visual Studio Code",
   "version": "0.0.1",
   "publisher": "edge-engineer",
