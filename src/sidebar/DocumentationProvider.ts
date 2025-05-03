@@ -31,7 +31,7 @@ export class DocumentationProvider
   private documentationLinks: DocumentationItem[] = [
     new DocumentationItem(
       "Visit Website",
-      "https://edgeos.io",
+      "https://edge.engineer",
       "globe"
     ),
     new DocumentationItem(
@@ -41,7 +41,7 @@ export class DocumentationProvider
     ),
     new DocumentationItem(
       "Visit GitHub",
-      "https://github.com/apache-edge",
+      "https://github.com/edgeengineer",
       "github"
     ),
   ];
