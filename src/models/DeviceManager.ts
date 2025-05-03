@@ -2,6 +2,11 @@ import * as vscode from "vscode";
 import { Device } from "./Device";
 import { v7 as uuidv7 } from "uuid";
 
+export const DEFAULT_DEVICE = {
+  id: "default",
+  address: "edgeos-device.local",
+};
+
 /**
  * Manages devices stored in VS Code configuration
  */
@@ -23,10 +28,15 @@ export class DeviceManager {
    */
   getDevices(): Device[] {
     const config = vscode.workspace.getConfiguration();
-    const devices =
+    let devices =
       config.get<Array<{ id: string; address: string }>>(
         DeviceManager.CONFIG_KEY
       ) || [];
+
+    if (devices.length === 0) {
+      devices.push(DEFAULT_DEVICE);
+    }
+
     return devices.map((d) => new Device(d.id, d.address));
   }
 
@@ -35,7 +45,7 @@ export class DeviceManager {
    */
   getCurrentDeviceId(): string | undefined {
     const config = vscode.workspace.getConfiguration();
-    return config.get<string>(DeviceManager.CURRENT_DEVICE_KEY);
+    return config.get<string>(DeviceManager.CURRENT_DEVICE_KEY) || "default";
   }
 
   /**
@@ -112,6 +122,11 @@ export class DeviceManager {
    * @param deviceId ID of the device to remove
    */
   async deleteDevice(deviceId: string): Promise<void> {
+    if (deviceId === DEFAULT_DEVICE.id) {
+      // Disable deleting the default device
+      return;
+    }
+
     const config = vscode.workspace.getConfiguration();
     const devices =
       config.get<Array<{ id: string; address: string }>>(
