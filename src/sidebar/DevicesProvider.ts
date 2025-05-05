@@ -13,8 +13,19 @@ export class DeviceTreeItem extends vscode.TreeItem {
     this.iconPath = new vscode.ThemeIcon(
       isCurrentDevice ? "check" : "vm-running"
     );
-    this.contextValue = isCurrentDevice ? "currentDevice" : "device";
 
+    let contextValue = "device";
+
+    if (isCurrentDevice) {
+      contextValue += "-current";
+    }
+
+    if (device.id === "default") {
+      contextValue += "-default";
+    }
+
+    this.contextValue = contextValue;
+    this.id = device.id;
     // Add a command to select this device when clicked
     this.command = {
       command: "edgeDevices.selectDevice",
