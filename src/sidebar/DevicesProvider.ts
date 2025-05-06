@@ -61,17 +61,15 @@ export class DevicesProvider
     return element;
   }
 
-  getChildren(element?: DeviceTreeItem): Thenable<DeviceTreeItem[]> {
+  async getChildren(element?: DeviceTreeItem): Promise<DeviceTreeItem[]> {
     if (element) {
       return Promise.resolve([]);
     } else {
-      const devices = this.deviceManager.getDevices();
+      const devices = await this.deviceManager.getDevices();
       const currentDeviceId = this.deviceManager.getCurrentDeviceId();
 
-      return Promise.resolve(
-        devices.map(
-          (device) => new DeviceTreeItem(device, device.id === currentDeviceId)
-        )
+      return devices.map(
+        (device) => new DeviceTreeItem(device, device.id === currentDeviceId)
       );
     }
   }
