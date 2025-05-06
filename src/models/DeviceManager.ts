@@ -1,12 +1,34 @@
 import * as vscode from "vscode";
 import { Device } from "./Device";
 import { v7 as uuidv7 } from "uuid";
+import { execSync } from "child_process";
 
-export const DEFAULT_DEVICE = {
-  id: "default",
-  address: "edgeos-device.local",
-};
+export interface EthernetDevice {
+  displayName: string;
+  isEdgeOSDevice: boolean;
+  macAddress: string;
+  name: string;
+}
 
+export interface USBDevice {
+  isEdgeOSDevice: boolean;
+  productId: string;
+  vendorId: string;
+  name: string;
+}
+
+export interface LANDevice {
+  displayName: string;
+  id: string;
+  hostname: string;
+  port: number;
+}
+
+export interface DeviceList {
+  lanDevices: LANDevice[];
+  ethernetDevices: EthernetDevice[];
+  usbDevices: USBDevice[];
+}
 /**
  * Manages devices stored in VS Code configuration
  */
@@ -33,11 +55,42 @@ export class DeviceManager {
         DeviceManager.CONFIG_KEY
       ) || [];
 
-    if (devices.length === 0) {
-      devices.push(DEFAULT_DEVICE);
-    }
+    const manuallyAddedDevices = devices.map((d) => new Device(
+      d.id,
+      d.address,
+      d.address,
+      "Custom"
+    ));
+    
+    try {
+      // Get the CLI path from configuration, falling back to global 'edge'
+      const config = vscode.workspace.getConfiguration("edgeos");
+      const cliPath = config.get<string>("cliPath") || "edge";
+  
+      // Execute the edge imager list command
+      const output = execSync(`${cliPath} devices --json`).toString();
+      
+      // Parse the JSON output
+      const devices: DeviceList = JSON.parse(output);
+      
+      let foundDevices: Device[] = [];
 
-    return devices.map((d) => new Device(d.id, d.address));
+      // TODO: Add ethernet and usb devices
+
+      for (const lanDevice of devices.lanDevices) {
+        foundDevices.push(new Device(
+          lanDevice.id,
+          lanDevice.hostname,
+          lanDevice.displayName,
+          "LAN"
+        ));
+      }
+
+      return [...foundDevices, ...manuallyAddedDevices];
+    } catch (error) {
+      console.error(error);
+      return manuallyAddedDevices;
+    }
   }
 
   /**
@@ -45,7 +98,7 @@ export class DeviceManager {
    */
   getCurrentDeviceId(): string | undefined {
     const config = vscode.workspace.getConfiguration();
-    return config.get<string>(DeviceManager.CURRENT_DEVICE_KEY) || "default";
+    return config.get<string>(DeviceManager.CURRENT_DEVICE_KEY);
   }
 
   /**
@@ -122,11 +175,6 @@ export class DeviceManager {
    * @param deviceId ID of the device to remove
    */
   async deleteDevice(deviceId: string): Promise<void> {
-    if (deviceId === DEFAULT_DEVICE.id) {
-      // Disable deleting the default device
-      return;
-    }
-
     const config = vscode.workspace.getConfiguration();
     const devices =
       config.get<Array<{ id: string; address: string }>>(

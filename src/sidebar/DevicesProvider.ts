@@ -9,10 +9,8 @@ export class DeviceTreeItem extends vscode.TreeItem {
   ) {
     super(device.address, vscode.TreeItemCollapsibleState.None);
     this.tooltip = `Device: ${device.id}`;
-    this.description = isCurrentDevice ? "Current Device" : "";
-    this.iconPath = new vscode.ThemeIcon(
-      isCurrentDevice ? "check" : "vm-running"
-    );
+    this.iconPath = new vscode.ThemeIcon("vm");
+    this.description = isCurrentDevice ? `Active (${device.connectionType})` : `(${device.connectionType})`;
 
     let contextValue = "device";
 
@@ -20,9 +18,7 @@ export class DeviceTreeItem extends vscode.TreeItem {
       contextValue += "-current";
     }
 
-    if (device.id === "default") {
-      contextValue += "-default";
-    }
+    contextValue += `-${device.connectionType}`;
 
     this.contextValue = contextValue;
     this.id = device.id;

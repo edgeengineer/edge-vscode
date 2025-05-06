@@ -84,7 +84,7 @@
       "view/item/context": [
         {
           "command": "edgeDevices.deleteDevice",
-          "when": "view == edgeDevices && viewItem =~ /device/ && !(viewItem =~ /current/) && !(viewItem =~ /default/)",
+          "when": "view == edgeDevices && viewItem =~ /device/ && viewItem =~ /Custom/",
           "group": "inline"
         },
         {
