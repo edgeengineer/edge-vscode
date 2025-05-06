@@ -41,6 +41,10 @@
           "name": "Devices"
         },
         {
+          "id": "edgeDisks",
+          "name": "Disks"
+        },
+        {
           "id": "edgeDocumentation",
           "name": "Documentation"
         }
@@ -61,6 +65,11 @@
         "command": "edgeDevices.selectDevice",
         "title": "Set as Current Device",
         "icon": "$(check)"
+      },
+      {
+        "command": "edgeDisks.flashDisk",
+        "title": "Flash Disk",
+        "icon": "$(zap)"
       },
       {
         "command": "edge.refreshDebugConfigurations",
@@ -84,12 +93,17 @@
       "view/item/context": [
         {
           "command": "edgeDevices.deleteDevice",
-          "when": "view == edgeDevices && viewItem =~ /device/ && !(viewItem =~ /current/) && !(viewItem =~ /default/)",
+          "when": "view == edgeDevices && viewItem =~ /device/ && viewItem =~ /Custom/",
           "group": "inline"
         },
         {
           "command": "edgeDevices.selectDevice",
           "when": "view == edgeDevices && viewItem =~ /device/ && !(viewItem =~ /current/)",
+          "group": "inline"
+        },
+        {
+          "command": "edgeDisks.flashDisk",
+          "when": "view == edgeDisks && viewItem == disk",
           "group": "inline"
         }
       ]

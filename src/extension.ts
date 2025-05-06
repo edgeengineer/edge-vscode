@@ -9,7 +9,10 @@ import { EdgeTaskProvider } from "./tasks/EdgeTaskProvider";
 import { DocumentationProvider } from "./sidebar/DocumentationProvider";
 import { DevicesProvider } from "./sidebar/DevicesProvider";
 import { DeviceManager } from "./models/DeviceManager";
+import { DiskManager } from "./models/DiskManager";
 import { EdgeDebugConfigurationProvider } from "./debugger/EdgeDebugConfigurationProvider";
+import { DisksProvider } from "./sidebar/DisksProvider";
+import { EdgeImager } from "./utilities/Imager";
 
 export async function activate(
   context: vscode.ExtensionContext
@@ -28,10 +31,15 @@ export async function activate(
 
     // Create the DeviceManager
     const deviceManager = new DeviceManager();
+    const diskManager = new DiskManager(outputChannel);
 
     // Register the devices provider
     const devicesProvider = new DevicesProvider(deviceManager);
     vscode.window.registerTreeDataProvider("edgeDevices", devicesProvider);
+
+    // Register the disks provider
+    const disksProvider = new DisksProvider(diskManager);
+    vscode.window.registerTreeDataProvider("edgeDisks", disksProvider);
 
     // Register device-related commands
     context.subscriptions.push(
@@ -95,6 +103,47 @@ export async function activate(
                 `Failed to set current device: ${getErrorDescription(error)}`
               );
             }
+          }
+        }
+      ),
+
+      vscode.commands.registerCommand(
+        "edgeDisks.flashDisk",
+        async (item) => {
+          if (!item || !item.disk) {
+            return;
+          }
+
+          const confirmed = await vscode.window.showWarningMessage(
+            "This feature will erase all data on the disk. Are you sure you want to continue?",
+            { modal: true },
+            "No",
+            "Yes"
+          ) === "Yes";
+
+          if (!confirmed) {
+            return;
+          }
+
+          const supportedDevices = await EdgeImager.listSupportedDevices();
+          const selectedImage = await vscode.window.showQuickPick(
+            supportedDevices,
+            {
+              placeHolder: "Select the device type you're flashing",
+              canPickMany: false
+            }
+          );
+            
+          if (!selectedImage) {
+            return;
+          }
+
+          try {
+            await diskManager.flashEdgeOS(item.disk, selectedImage);
+          } catch (error) {
+            vscode.window.showErrorMessage(
+              `Failed to flash EdgeOS: ${getErrorDescription(error)}`
+            );
           }
         }
       ),

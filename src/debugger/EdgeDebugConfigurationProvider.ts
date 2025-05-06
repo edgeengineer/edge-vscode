@@ -112,7 +112,7 @@ export class EdgeDebugConfigurationProvider
     }
 
     // Check if a device is selected
-    const currentDevice = this.deviceManager.getCurrentDevice();
+    const currentDevice = await this.deviceManager.getCurrentDevice();
     if (!currentDevice) {
       const actions = ["Add Device", "Select Device", "Cancel"];
       const selection = await vscode.window.showErrorMessage(

@@ -9,10 +9,8 @@ export class DeviceTreeItem extends vscode.TreeItem {
   ) {
     super(device.address, vscode.TreeItemCollapsibleState.None);
     this.tooltip = `Device: ${device.id}`;
-    this.description = isCurrentDevice ? "Current Device" : "";
-    this.iconPath = new vscode.ThemeIcon(
-      isCurrentDevice ? "check" : "vm-running"
-    );
+    this.iconPath = new vscode.ThemeIcon("vm");
+    this.description = isCurrentDevice ? `Active (${device.connectionType})` : `(${device.connectionType})`;
 
     let contextValue = "device";
 
@@ -20,9 +18,7 @@ export class DeviceTreeItem extends vscode.TreeItem {
       contextValue += "-current";
     }
 
-    if (device.id === "default") {
-      contextValue += "-default";
-    }
+    contextValue += `-${device.connectionType}`;
 
     this.contextValue = contextValue;
     this.id = device.id;
@@ -65,17 +61,15 @@ export class DevicesProvider
     return element;
   }
 
-  getChildren(element?: DeviceTreeItem): Thenable<DeviceTreeItem[]> {
+  async getChildren(element?: DeviceTreeItem): Promise<DeviceTreeItem[]> {
     if (element) {
       return Promise.resolve([]);
     } else {
-      const devices = this.deviceManager.getDevices();
+      const devices = await this.deviceManager.getDevices();
       const currentDeviceId = this.deviceManager.getCurrentDeviceId();
 
-      return Promise.resolve(
-        devices.map(
-          (device) => new DeviceTreeItem(device, device.id === currentDeviceId)
-        )
+      return devices.map(
+        (device) => new DeviceTreeItem(device, device.id === currentDeviceId)
       );
     }
   }
