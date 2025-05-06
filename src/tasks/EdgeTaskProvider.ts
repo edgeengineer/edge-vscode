@@ -119,7 +119,7 @@ export class EdgeTaskProvider implements vscode.TaskProvider {
           const args = [...config.args];
 
           // Add --agent parameter if there's a current device
-          const currentDevice = this.deviceManager.getCurrentDevice();
+          const currentDevice = await this.deviceManager.getCurrentDevice();
           if (currentDevice) {
             args.push("--agent", currentDevice.address);
           }
@@ -160,7 +160,7 @@ export class EdgeTaskProvider implements vscode.TaskProvider {
           const args = [...definition.args];
 
           // Add --agent parameter if there's a current device
-          const currentDevice = this.deviceManager.getCurrentDevice();
+          const currentDevice = await this.deviceManager.getCurrentDevice();
           if (currentDevice) {
             args.push("--agent", currentDevice.address);
           }

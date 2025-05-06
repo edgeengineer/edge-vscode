@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import { Device } from "./Device";
 import { v7 as uuidv7 } from "uuid";
 import { execSync } from "child_process";
+import { EdgeCLI } from "../edge-cli/edge-cli";
 
 export interface EthernetDevice {
   displayName: string;
@@ -48,7 +49,7 @@ export class DeviceManager {
   /**
    * Get all configured devices
    */
-  getDevices(): Device[] {
+  async getDevices(): Promise<Device[]> {
     const config = vscode.workspace.getConfiguration();
     let devices =
       config.get<Array<{ id: string; address: string }>>(
@@ -63,12 +64,13 @@ export class DeviceManager {
     ));
     
     try {
-      // Get the CLI path from configuration, falling back to global 'edge'
-      const config = vscode.workspace.getConfiguration("edgeos");
-      const cliPath = config.get<string>("cliPath") || "edge";
+      const cli = await EdgeCLI.create();
+      if (!cli) {
+        return manuallyAddedDevices;
+      }
   
       // Execute the edge imager list command
-      const output = execSync(`${cliPath} devices --json`).toString();
+      const output = execSync(`${cli.path} devices --json`).toString();
       
       // Parse the JSON output
       const devices: DeviceList = JSON.parse(output);
@@ -104,13 +106,14 @@ export class DeviceManager {
   /**
    * Get the current active device
    */
-  getCurrentDevice(): Device | undefined {
+  async getCurrentDevice(): Promise<Device | undefined> {
     const currentId = this.getCurrentDeviceId();
     if (!currentId) {
       return undefined;
     }
 
-    const device = this.getDevices().find((d) => d.id === currentId);
+    const devices = await this.getDevices();
+    const device = devices.find((d) => d.id === currentId);
     return device;
   }
 
@@ -120,8 +123,9 @@ export class DeviceManager {
   async setCurrentDevice(deviceId: string | undefined): Promise<void> {
     const config = vscode.workspace.getConfiguration();
 
+    const devices = await this.getDevices();
     // If trying to set a device, make sure it exists
-    if (deviceId && !this.getDevices().some((d) => d.id === deviceId)) {
+    if (deviceId && !devices.some((d) => d.id === deviceId)) {
       throw new Error(`Device with ID ${deviceId} not found`);
     }
 
