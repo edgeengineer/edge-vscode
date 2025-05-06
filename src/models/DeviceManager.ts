@@ -171,7 +171,7 @@ export class DeviceManager {
       this._onDevicesChanged.fire();
     }
 
-    return new Device(newDevice.id, newDevice.address);
+    return new Device(newDevice.id, newDevice.address, "Edge Agent", "Custom");
   }
 
   /**
