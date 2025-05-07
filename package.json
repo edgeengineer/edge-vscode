@@ -58,6 +58,11 @@
         "icon": "$(add)"
       },
       {
+        "command": "edgeDevices.refreshDevices",
+        "title": "Refresh Devices",
+        "icon": "$(refresh)"
+      },
+      {
         "command": "edgeDevices.deleteDevice",
         "title": "Remove Device",
         "icon": "$(trash)"
@@ -71,6 +76,11 @@
         "command": "edgeDisks.flashDisk",
         "title": "Flash Disk",
         "icon": "$(zap)"
+      },
+      {
+        "command": "edgeDisks.refreshDisks",
+        "title": "Refresh Disks",
+        "icon": "$(refresh)"
       },
       {
         "command": "edge.refreshDebugConfigurations",
@@ -88,6 +98,16 @@
         {
           "command": "edgeDevices.addDevice",
           "when": "view == edgeDevices",
+          "group": "navigation"
+        },
+        {
+          "command": "edgeDevices.refreshDevices",
+          "when": "view == edgeDevices",
+          "group": "navigation"
+        },
+        {
+          "command": "edgeDisks.refreshDisks",
+          "when": "view == edgeDisks",
           "group": "navigation"
         }
       ],
