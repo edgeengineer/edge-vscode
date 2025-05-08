@@ -4,6 +4,8 @@ import { EdgeCLI } from "../edge-cli/edge-cli";
 import { EdgeWorkspaceContext } from "../EdgeWorkspaceContext";
 import { DeviceManager } from "../models/DeviceManager";
 import { getErrorDescription } from "../utilities/utilities";
+import { realpath } from "fs/promises";
+import * as os from "os";
 
 export const EDGE_LAUNCH_CONFIG_TYPE = "edge";
 // Default debug port used by Edge agent
@@ -76,7 +78,7 @@ export class EdgeDebugConfigurationProvider
   ): Promise<vscode.DebugConfiguration | undefined | null> {
     // Check if Swift SDK path is set
     const config = vscode.workspace.getConfiguration("edgeos");
-    const sdkPath = config.get<string>("swiftSdkPath");
+    let sdkPath = config.get<string>("swiftSdkPath");
 
     if (!sdkPath || sdkPath.trim() === "") {
       const actions = ["Configure Swift SDK Path", "Cancel"];
@@ -93,6 +95,13 @@ export class EdgeDebugConfigurationProvider
     }
 
     try {
+      // NodeJS realpath does not expand ~, so we need to do it manually
+      if (sdkPath.startsWith("~")) {
+        sdkPath = path.join(os.homedir(), sdkPath.slice(1));
+      }
+
+      // Expand the SDK path to the real path
+      sdkPath = await realpath(sdkPath);
       // Check if the SDK path exists
       await vscode.workspace.fs.stat(vscode.Uri.file(sdkPath));
     } catch (error) {

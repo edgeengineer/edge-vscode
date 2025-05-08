@@ -139,7 +139,7 @@
         },
         "edgeos.swiftSdkPath": {
           "type": "string",
-          "default": "",
+          "default": "~/.swiftpm/swift-sdks/6.1-RELEASE_edgeos_aarch64.artifactbundle",
           "description": "Path to the EdgeOS Swift SDK artifact bundle. Required for debugging. This setting will be removed once the Edge CLI is capable of managing the SDK. This MUST point to the installation location of the 6.1-RELEASE_edgeos_aarch64 SDK."
         },
         "edgeos.devices": {
