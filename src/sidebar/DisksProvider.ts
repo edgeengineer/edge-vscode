@@ -41,7 +41,9 @@ export class DisksProvider implements vscode.TreeDataProvider<DiskTreeItem> {
 
   async getChildren(element?: DiskTreeItem): Promise<DiskTreeItem[]> {
     const disks = await this.diskManager.getDisks();
-    const filteredDisks = disks.filter((disk) => disk.isExternal);
+    const filteredDisks = disks.filter((disk) => {
+      return !disk.id.includes("disk0");
+    });
     return Promise.resolve(filteredDisks.map((disk) => new DiskTreeItem(disk)));
   }
 }
