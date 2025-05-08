@@ -2,6 +2,8 @@ import * as vscode from "vscode";
 import { Disk } from "../models/Disk";
 import { DiskManager } from "../models/DiskManager";
 import { DeviceTreeItem } from "./DevicesProvider";
+import { Refresher } from "./Refresher";
+import { Device } from "../models/Device";
 
 export class DiskTreeItem extends vscode.TreeItem {
   constructor(
@@ -37,6 +39,15 @@ export class DisksProvider implements vscode.TreeDataProvider<DiskTreeItem> {
 
   refresh(): void {
     this._onDidChangeTreeData.fire();
+  }
+
+  autorefresh(): void {
+    const autorefresh = new Refresher<Disk[]>(() => {
+      this._onDidChangeTreeData.fire();
+    }, (disks1, disks2) => {
+      return disks1.length === disks2.length && disks1.every((disk, index) => disk.id === disks2[index].id);
+    });
+    autorefresh.autorefresh(() => this.diskManager.getDisks());
   }
 
   async getChildren(element?: DiskTreeItem): Promise<DiskTreeItem[]> {
