@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { Device } from "../models/Device";
 import { DeviceManager } from "../models/DeviceManager";
+import { Refresher } from "./Refresher";
 
 export class DeviceTreeItem extends vscode.TreeItem {
   constructor(
@@ -31,6 +32,7 @@ export class DeviceTreeItem extends vscode.TreeItem {
   }
 }
 
+
 export class DevicesProvider
   implements vscode.TreeDataProvider<DeviceTreeItem>
 {
@@ -55,6 +57,15 @@ export class DevicesProvider
 
   refresh(): void {
     this._onDidChangeTreeData.fire();
+  }
+
+  autorefresh(): void {
+    const autorefresh = new Refresher<Device[]>(() => {
+      this._onDidChangeTreeData.fire();
+    }, (devices1, devices2) => {
+      return devices1.length === devices2.length && devices1.every((device, index) => device.id === devices2[index].id);
+    });
+    autorefresh.autorefresh(() => this.deviceManager.getDevices());
   }
 
   getTreeItem(element: DeviceTreeItem): vscode.TreeItem {

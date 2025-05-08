@@ -41,6 +41,9 @@ export async function activate(
     const disksProvider = new DisksProvider(diskManager);
     vscode.window.registerTreeDataProvider("edgeDisks", disksProvider);
 
+    devicesProvider.autorefresh();
+    disksProvider.autorefresh();
+
     // Register device-related commands
     context.subscriptions.push(
       vscode.commands.registerCommand("edgeDevices.refreshDevices", () => {
