@@ -43,6 +43,10 @@ export async function activate(
 
     // Register device-related commands
     context.subscriptions.push(
+      vscode.commands.registerCommand("edgeDevices.refreshDevices", () => {
+        devicesProvider.refresh();
+      }),
+
       vscode.commands.registerCommand("edgeDevices.addDevice", async () => {
         const address = await vscode.window.showInputBox({
           placeHolder: "hostname or hostname:port",
@@ -104,6 +108,13 @@ export async function activate(
               );
             }
           }
+        }
+      ),
+
+      vscode.commands.registerCommand(
+        "edgeDisks.refreshDisks",
+        () => {
+          disksProvider.refresh();
         }
       ),
 
