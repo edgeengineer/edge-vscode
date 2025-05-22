@@ -10,9 +10,11 @@ import { DocumentationProvider } from "./sidebar/DocumentationProvider";
 import { DevicesProvider } from "./sidebar/DevicesProvider";
 import { DeviceManager } from "./models/DeviceManager";
 import { DiskManager } from "./models/DiskManager";
-import { EdgeDebugConfigurationProvider } from "./debugger/EdgeDebugConfigurationProvider";
+import { EdgeDebugConfigurationProvider, EDGE_LAUNCH_CONFIG_TYPE } from "./debugger/EdgeDebugConfigurationProvider";
 import { DisksProvider } from "./sidebar/DisksProvider";
 import { EdgeImager } from "./utilities/Imager";
+import { EdgeProjectDetector } from "./utilities/EdgeProjectDetector";
+import { makeDebugConfigurations, hasAnyEdgeDebugConfiguration } from "./debugger/launch";
 
 export async function activate(
   context: vscode.ExtensionContext
@@ -216,10 +218,32 @@ export async function activate(
 
     // Subscribe to folder changes in the Swift workspace context
     const folderChangeDisposable = swiftAPI.workspaceContext.onDidChangeFolders(
-      ({ folder, operation }) => {
+      async ({ folder, operation }) => {
         outputChannel.appendLine(`Swift folder change detected: ${operation}`);
-        if (folder) {
-          outputChannel.appendLine(`Folder: ${folder}`);
+        if (folder && operation === 'add') {
+          outputChannel.appendLine(`Folder added: ${folder.folder.fsPath}`);
+          
+          // Check if this is an Edge project
+          const isEdgeProject = await EdgeProjectDetector.isEdgeProject(folder.folder.fsPath);
+          if (isEdgeProject) {
+            // Find the corresponding EdgeFolderContext
+            for (const edgeFolder of edgeWorkspaceContext.folders) {
+              if (edgeFolder.swift === folder) {
+                // Check if there are already Edge configurations for this folder
+                const wsLaunchSection = vscode.workspace.getConfiguration("launch", folder.folder);
+                const configurations = wsLaunchSection.get<any[]>("configurations") || [];
+                const hasEdgeConfigurations = configurations.some(
+                  config => config.type === EDGE_LAUNCH_CONFIG_TYPE
+                );
+                
+                if (!hasEdgeConfigurations) {
+                  await makeDebugConfigurations(edgeFolder);
+                  outputChannel.appendLine(`Added Edge debug configurations to new folder ${folder.folder.fsPath}`);
+                }
+                break;
+              }
+            }
+          }
         }
       }
     );
@@ -311,6 +335,10 @@ export async function activate(
           }
         });
     }
+
+    // Note: Launch configuration generation is now handled directly in EdgeWorkspaceContext
+    // The configurations will be generated automatically when all folders are ready
+    console.log(`[Edge] Configuration generation handled by EdgeWorkspaceContext`);
 
     outputChannel.appendLine("EdgeOS extension activated successfully.");
   } catch (error) {
