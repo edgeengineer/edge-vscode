@@ -30,6 +30,21 @@ export interface DeviceList {
   ethernetDevices: EthernetDevice[];
   usbDevices: USBDevice[];
 }
+
+export interface WifiNetwork {
+  ssid: string;
+  signalStrength: number;
+}
+
+export interface WifiStatus {
+  connected: boolean;
+  ssid: string;
+}
+
+export interface WifiConnectionResult {
+  success: boolean;
+}
+
 /**
  * Manages devices stored in VS Code configuration
  */
@@ -172,6 +187,61 @@ export class DeviceManager {
     }
 
     return new Device(newDevice.id, newDevice.address, "Edge Agent", "Custom");
+  }
+
+  /**
+   * Connect to WiFi
+   * @param deviceId ID of the device to connect to
+   */
+  async connectWifi(deviceId: string): Promise<void> {
+    const config = vscode.workspace.getConfiguration();
+    const devices =
+      config.get<Array<{ id: string; address: string }>>(
+        DeviceManager.CONFIG_KEY
+      ) || [];
+
+    const device = devices.find((d) => d.id === deviceId);
+
+    if (!device) {
+      throw new Error(`Device with ID ${deviceId} not found`);
+    }
+
+    const cli = await EdgeCLI.create();
+    if (!cli) {
+      throw new Error("Failed to create Edge CLI");
+    }
+
+    let output = execSync(`${cli.path} wifi list --agent ${device.address} --json`).toString();
+    const networks: WifiNetwork[] = JSON.parse(output);
+
+    const network = await vscode.window.showQuickPick(
+      networks.map((network) => (
+        { label: network.ssid, description: `Signal Strength: ${network.signalStrength}` }
+      )),
+      { placeHolder: "Select a WiFi network" }
+    );
+
+    if (!network) {
+      return;
+    }
+    
+    const password = await vscode.window.showInputBox({
+      prompt: "Enter the password for the WiFi network",
+      password: true,
+    });
+
+    if (!password) {
+      return;
+    }
+
+    output = execSync(`${cli.path} wifi connect \"${network.label}\" --agent ${device.address} --password \"${password}\" --json`).toString();
+    const status: WifiConnectionResult = JSON.parse(output);
+
+    if (!status.success) {
+      throw new Error("Failed to connect to WiFi");
+    }
+
+    vscode.window.showInformationMessage(`Connected to ${network.label}`);
   }
 
   /**

@@ -68,6 +68,11 @@
         "icon": "$(trash)"
       },
       {
+        "command": "edgeDevices.connectWifi",
+        "title": "Connect to WiFi",
+        "icon": "$(link)"
+      },
+      {
         "command": "edgeDevices.selectDevice",
         "title": "Set as Current Device",
         "icon": "$(check)"
@@ -115,6 +120,11 @@
         {
           "command": "edgeDevices.deleteDevice",
           "when": "view == edgeDevices && viewItem =~ /device/ && viewItem =~ /Custom/",
+          "group": "inline"
+        },
+        {
+          "command": "edgeDevices.connectWifi",
+          "when": "view == edgeDevices && viewItem =~ /device/",
           "group": "inline"
         },
         {
