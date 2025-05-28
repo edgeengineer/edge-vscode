@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { Device } from "./Device";
 import { v7 as uuidv7 } from "uuid";
-import { execSync } from "child_process";
+import { exec } from "child_process";
 import { EdgeCLI } from "../edge-cli/edge-cli";
 
 export interface EthernetDevice {
@@ -70,7 +70,14 @@ export class DeviceManager {
       }
   
       // Execute the edge imager list command
-      const output = execSync(`${cli.path} devices --json`).toString();
+      const output = await new Promise<string>((resolve, reject) => {
+        exec(`${cli.path} devices --json`, (error, stdout) => {
+          if (error) {
+            reject(error);
+          }
+          resolve(stdout);
+        });
+      });
       
       // Parse the JSON output
       const devices: DeviceList = JSON.parse(output);
@@ -172,6 +179,75 @@ export class DeviceManager {
     }
 
     return new Device(newDevice.id, newDevice.address, "Edge Agent", "Custom");
+  }
+
+  /**
+   * Connect to WiFi
+   * @param deviceId ID of the device to connect to
+   */
+  async connectWifi(deviceId: string): Promise<void> {
+    const config = vscode.workspace.getConfiguration();
+    const devices =
+      config.get<Array<{ id: string; address: string }>>(
+        DeviceManager.CONFIG_KEY
+      ) || [];
+
+    const device = devices.find((d) => d.id === deviceId);
+
+    if (!device) {
+      throw new Error(`Device with ID ${deviceId} not found`);
+    }
+
+    const cli = await EdgeCLI.create();
+    if (!cli) {
+      throw new Error("Failed to create Edge CLI");
+    }
+
+    let output = await new Promise<string>((resolve, reject) => {
+      exec(`${cli.path} wifi list --agent ${device.address} --json`, (error, stdout) => {
+        if (error) {
+          reject(error);
+        }
+        resolve(stdout);
+      });
+    });
+    const networks: WifiNetwork[] = JSON.parse(output);
+
+    const network = await vscode.window.showQuickPick(
+      networks.map((network) => (
+        { label: network.ssid, description: `Signal Strength: ${network.signalStrength}` }
+      )),
+      { placeHolder: "Select a WiFi network" }
+    );
+
+    if (!network) {
+      return;
+    }
+    
+    const password = await vscode.window.showInputBox({
+      prompt: "Enter the password for the WiFi network",
+      password: true,
+    });
+
+    if (!password) {
+      return;
+    }
+
+    output = await new Promise<string>((resolve, reject) => {
+      exec(`${cli.path} wifi connect \"${network.label}\" --agent ${device.address} --password \"${password}\" --json`, (error, stdout, stderr) => {
+        if (error) {
+          reject(error);
+        }
+        resolve(stdout);
+      });
+    });
+    const status: WifiConnectionResult = JSON.parse(output);
+
+    if (!status.success) {
+      throw new Error("Failed to connect to WiFi");
+    }
+
+    vscode.window.showInformationMessage(`Connected to ${network.label}`);
   }
 
   /**
