@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { Device } from "./Device";
 import { v7 as uuidv7 } from "uuid";
-import { execSync } from "child_process";
+import { exec } from "child_process";
 import { EdgeCLI } from "../edge-cli/edge-cli";
 
 export interface EthernetDevice {
@@ -52,6 +52,7 @@ export class DeviceManager {
   private static readonly CONFIG_KEY = "edgeos.devices";
   private static readonly CURRENT_DEVICE_KEY = "edgeos.currentDevice";
   private _onDevicesChanged = new vscode.EventEmitter<void>();
+  private devices: Device[] = [];
   readonly onDevicesChanged = this._onDevicesChanged.event;
 
   private _onCurrentDeviceChanged = new vscode.EventEmitter<
@@ -85,16 +86,23 @@ export class DeviceManager {
       }
   
       // Execute the edge imager list command
-      const output = execSync(`${cli.path} devices --json`).toString();
+      const output = await new Promise<string>((resolve, reject) => {
+        exec(`${cli.path} devices --json`, (error, stdout) => {
+          if (error) {
+            reject(error);
+          }
+          resolve(stdout);
+        });
+      });
       
       // Parse the JSON output
-      const devices: DeviceList = JSON.parse(output);
+      const deviceList: DeviceList = JSON.parse(output);
       
       let foundDevices: Device[] = [];
 
       // TODO: Add ethernet and usb devices
 
-      for (const lanDevice of devices.lanDevices) {
+      for (const lanDevice of deviceList.lanDevices) {
         foundDevices.push(new Device(
           lanDevice.id,
           lanDevice.hostname,
@@ -103,9 +111,12 @@ export class DeviceManager {
         ));
       }
 
-      return [...foundDevices, ...manuallyAddedDevices];
+      const devices = [...foundDevices, ...manuallyAddedDevices];
+      this.devices = devices;
+      return devices;
     } catch (error) {
       console.error(error);
+      this.devices = manuallyAddedDevices;
       return manuallyAddedDevices;
     }
   }
@@ -127,8 +138,7 @@ export class DeviceManager {
       return undefined;
     }
 
-    const devices = await this.getDevices();
-    const device = devices.find((d) => d.id === currentId);
+    const device = this.devices.find((d) => d.id === currentId);
     return device;
   }
 
@@ -138,9 +148,8 @@ export class DeviceManager {
   async setCurrentDevice(deviceId: string | undefined): Promise<void> {
     const config = vscode.workspace.getConfiguration();
 
-    const devices = await this.getDevices();
     // If trying to set a device, make sure it exists
-    if (deviceId && !devices.some((d) => d.id === deviceId)) {
+    if (deviceId && !this.devices.some((d) => d.id === deviceId)) {
       throw new Error(`Device with ID ${deviceId} not found`);
     }
 
@@ -211,7 +220,15 @@ export class DeviceManager {
       throw new Error("Failed to create Edge CLI");
     }
 
-    let output = execSync(`${cli.path} wifi list --agent ${device.address} --json`).toString();
+    let output = await new Promise<string>((resolve, reject) => {
+      exec(`${cli.path} wifi list --agent ${device.address} --json`, (error, stdout) => {
+        if (error) {
+          reject(error);
+        }
+        resolve(stdout);
+      });
+    });
+
     const networks: WifiNetwork[] = JSON.parse(output);
 
     const network = await vscode.window.showQuickPick(
@@ -234,7 +251,15 @@ export class DeviceManager {
       return;
     }
 
-    output = execSync(`${cli.path} wifi connect \"${network.label}\" --agent ${device.address} --password \"${password}\" --json`).toString();
+    output = await new Promise<string>((resolve, reject) => {
+      exec(`${cli.path} wifi connect \"${network.label}\" --agent ${device.address} --password \"${password}\" --json`, (error, stdout, stderr) => {
+        if (error) {
+          reject(error);
+        }
+        resolve(stdout);
+      });
+    });
+    
     const status: WifiConnectionResult = JSON.parse(output);
 
     if (!status.success) {

@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { Disk } from "./Disk";
 import { EdgeCLI } from "../edge-cli/edge-cli";
-import { spawn, execSync } from "child_process";
+import { spawn, exec } from "child_process";
 
 export class DiskManager {
   private outputChannel: vscode.OutputChannel;
@@ -17,7 +17,14 @@ export class DiskManager {
     }
 
     // Execute the edge imager list command
-    const output = execSync(`${cli.path} imager list --json --all`).toString();
+    const output = await new Promise<string>((resolve, reject) => {
+      exec(`${cli.path} imager list --json --all`, (error, stdout) => {
+        if (error) {
+          reject(error);
+        }
+        resolve(stdout);
+      });
+    });
     
     // Parse the JSON output
     return JSON.parse(output);

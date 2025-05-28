@@ -1,4 +1,4 @@
-import { execSync } from "child_process";
+import { exec } from "child_process";
 import { EdgeCLI } from "../edge-cli/edge-cli";
 
 export class EdgeImager {
@@ -8,7 +8,14 @@ export class EdgeImager {
       return [];
     }
 
-    const output = execSync(`${cli.path} imager list-devices --json`).toString();
+    const output = await new Promise<string>((resolve, reject) => {
+      exec(`${cli.path} imager list-devices --json`, (error, stdout, stderr) => {
+        if (error) {
+          reject(error);
+        }
+        resolve(stdout);
+      });
+    });
     const devices = JSON.parse(output);
     return devices.map((device: any) => device.name);
   }
