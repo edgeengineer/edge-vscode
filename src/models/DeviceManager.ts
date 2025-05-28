@@ -37,6 +37,7 @@ export class DeviceManager {
   private static readonly CONFIG_KEY = "edgeos.devices";
   private static readonly CURRENT_DEVICE_KEY = "edgeos.currentDevice";
   private _onDevicesChanged = new vscode.EventEmitter<void>();
+  private devices: Device[] = [];
   readonly onDevicesChanged = this._onDevicesChanged.event;
 
   private _onCurrentDeviceChanged = new vscode.EventEmitter<
@@ -80,13 +81,13 @@ export class DeviceManager {
       });
       
       // Parse the JSON output
-      const devices: DeviceList = JSON.parse(output);
+      const deviceList: DeviceList = JSON.parse(output);
       
       let foundDevices: Device[] = [];
 
       // TODO: Add ethernet and usb devices
 
-      for (const lanDevice of devices.lanDevices) {
+      for (const lanDevice of deviceList.lanDevices) {
         foundDevices.push(new Device(
           lanDevice.id,
           lanDevice.hostname,
@@ -95,9 +96,12 @@ export class DeviceManager {
         ));
       }
 
-      return [...foundDevices, ...manuallyAddedDevices];
+      const devices = [...foundDevices, ...manuallyAddedDevices];
+      this.devices = devices;
+      return devices;
     } catch (error) {
       console.error(error);
+      this.devices = manuallyAddedDevices;
       return manuallyAddedDevices;
     }
   }
@@ -119,8 +123,7 @@ export class DeviceManager {
       return undefined;
     }
 
-    const devices = await this.getDevices();
-    const device = devices.find((d) => d.id === currentId);
+    const device = this.devices.find((d) => d.id === currentId);
     return device;
   }
 
@@ -130,9 +133,8 @@ export class DeviceManager {
   async setCurrentDevice(deviceId: string | undefined): Promise<void> {
     const config = vscode.workspace.getConfiguration();
 
-    const devices = await this.getDevices();
     // If trying to set a device, make sure it exists
-    if (deviceId && !devices.some((d) => d.id === deviceId)) {
+    if (deviceId && !this.devices.some((d) => d.id === deviceId)) {
       throw new Error(`Device with ID ${deviceId} not found`);
     }
 
