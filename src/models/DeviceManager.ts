@@ -30,6 +30,21 @@ export interface DeviceList {
   ethernetDevices: EthernetDevice[];
   usbDevices: USBDevice[];
 }
+
+export interface WifiNetwork {
+  ssid: string;
+  signalStrength: number;
+}
+
+export interface WifiStatus {
+  connected: boolean;
+  ssid: string;
+}
+
+export interface WifiConnectionResult {
+  success: boolean;
+}
+
 /**
  * Manages devices stored in VS Code configuration
  */
@@ -213,6 +228,7 @@ export class DeviceManager {
         resolve(stdout);
       });
     });
+
     const networks: WifiNetwork[] = JSON.parse(output);
 
     const network = await vscode.window.showQuickPick(
@@ -243,6 +259,7 @@ export class DeviceManager {
         resolve(stdout);
       });
     });
+    
     const status: WifiConnectionResult = JSON.parse(output);
 
     if (!status.success) {

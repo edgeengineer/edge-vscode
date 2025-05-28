@@ -99,6 +99,21 @@ export async function activate(
       ),
 
       vscode.commands.registerCommand(
+        "edgeDevices.connectWifi",
+        async (item) => {
+          if (item?.device) {
+            try {
+              await deviceManager.connectWifi(item.device.id);
+            } catch (error) {
+              vscode.window.showErrorMessage(
+                `Failed to connect to WiFi: ${getErrorDescription(error)}`
+              );
+            }
+          }
+        }
+      ),
+
+      vscode.commands.registerCommand(
         "edgeDevices.selectDevice",
         async (item) => {
           if (item?.device) {
