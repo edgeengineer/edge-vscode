@@ -76,11 +76,25 @@ This extension contributes the following settings:
 
 ## Release Notes
 
+### 0.0.6
+
+- wifi configuration
+
+### 0.0.5
+
+- Added automated release process via GitHub Actions
+
 ### 0.0.1
 
 - Initial release with basic device management, build and debugging support
 
 ---
+
+## Development
+
+### Release Process
+
+This extension uses an automated release process via GitHub Actions. For details on how to release new versions, see [Release Process Documentation](docs/release-process.md).
 
 ## Feedback and Contributions
 

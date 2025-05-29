@@ -1,0 +1,145 @@
+name: Release Extension
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (leave empty for patch bump, or specify "minor" or "major")'
+        required: false
+        default: 'patch'
+      dry_run:
+        description: 'Dry run (skip publishing)'
+        required: false
+        default: false
+        type: boolean
+  push:
+    branches:
+      - main
+    paths:
+      - 'package.json'
+
+jobs:
+  check_version_change:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    outputs:
+      version_changed: ${{ steps.check_version.outputs.version_changed }}
+      new_version: ${{ steps.check_version.outputs.new_version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check if version changed
+        id: check_version
+        run: |
+          # Get current package.json
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          
+          # Get previous package.json
+          git checkout HEAD~1 package.json
+          PREVIOUS_VERSION=$(node -p "require('./package.json').version")
+          git checkout HEAD package.json
+          
+          # Compare versions
+          if [ "$CURRENT_VERSION" != "$PREVIOUS_VERSION" ]; then
+            echo "Version changed from $PREVIOUS_VERSION to $CURRENT_VERSION"
+            echo "version_changed=true" >> $GITHUB_OUTPUT
+            echo "new_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "Version not changed"
+            echo "version_changed=false" >> $GITHUB_OUTPUT
+          fi
+
+  release:
+    runs-on: ubuntu-latest
+    needs: [check_version_change]
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && needs.check_version_change.outputs.version_changed == 'true')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install vsce
+        run: npm install -g @vscode/vsce
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+
+      - name: Bump version
+        id: bump-version
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          VERSION_TYPE="${{ github.event.inputs.version }}"
+          if [ -z "$VERSION_TYPE" ] || [ "$VERSION_TYPE" = "patch" ]; then
+            npm version patch --no-git-tag-version
+          elif [ "$VERSION_TYPE" = "minor" ]; then
+            npm version minor --no-git-tag-version
+          elif [ "$VERSION_TYPE" = "major" ]; then
+            npm version major --no-git-tag-version
+          else
+            npm version $VERSION_TYPE --no-git-tag-version
+          fi
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+          echo "New version: $NEW_VERSION"
+
+      - name: Set version from commit
+        if: github.event_name == 'push'
+        run: |
+          echo "NEW_VERSION=${{ needs.check_version_change.outputs.new_version }}" >> $GITHUB_ENV
+          echo "Using version from commit: ${{ needs.check_version_change.outputs.new_version }}"
+
+      - name: Build extension
+        run: npm run package
+
+      - name: Package extension
+        run: vsce package
+
+      - name: Create Git tag
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git add package.json package-lock.json
+          git commit -m "Bump version to ${{ env.NEW_VERSION }}"
+          git tag v${{ env.NEW_VERSION }}
+          git push
+          git push --tags
+
+      - name: Create Git tag for push event
+        if: github.event_name == 'push'
+        run: |
+          # Only create tag if it doesn't exist
+          if ! git tag | grep -q "v${{ env.NEW_VERSION }}"; then
+            git tag v${{ env.NEW_VERSION }}
+            git push --tags
+          fi
+
+      - name: Publish extension
+        if: ${{ github.event_name == 'push' || !github.event.inputs.dry_run }}
+        run: vsce publish -p ${{ secrets.VSCE_PAT }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: v${{ env.NEW_VERSION }}
+          tag_name: v${{ env.NEW_VERSION }}
+          files: |
+            edge-vscode-${{ env.NEW_VERSION }}.vsix
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 

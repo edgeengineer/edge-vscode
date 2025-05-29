@@ -2,7 +2,7 @@
   "name": "edge-vscode",
   "displayName": "Edge Engineer",
   "description": "Build and debug EdgeOS applications with Visual Studio Code",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "publisher": "edge-engineer",
   "repository": {
     "type": "git",
