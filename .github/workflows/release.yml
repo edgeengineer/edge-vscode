@@ -61,7 +61,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -74,11 +73,6 @@ jobs:
 
       - name: Install vsce
         run: npm install -g @vscode/vsce
-
-      - name: Configure Git
-        run: |
-          git config --global user.name "GitHub Actions Bot"
-          git config --global user.email "actions@github.com"
 
       - name: Bump version
         id: bump-version
@@ -110,36 +104,21 @@ jobs:
       - name: Package extension
         run: vsce package
 
-      - name: Create Git tag
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          git add package.json package-lock.json
-          git commit -m "Bump version to ${{ env.NEW_VERSION }}"
-          git tag v${{ env.NEW_VERSION }}
-          git push
-          git push --tags
-
-      - name: Create Git tag for push event
-        if: github.event_name == 'push'
-        run: |
-          # Only create tag if it doesn't exist
-          if ! git tag | grep -q "v${{ env.NEW_VERSION }}"; then
-            git tag v${{ env.NEW_VERSION }}
-            git push --tags
-          fi
-
-      - name: Publish extension
-        if: ${{ github.event_name == 'push' || !github.event.inputs.dry_run }}
-        run: vsce publish -p ${{ secrets.VSCE_PAT }}
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+      - name: Create artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: v${{ env.NEW_VERSION }}
-          tag_name: v${{ env.NEW_VERSION }}
-          files: |
-            edge-vscode-${{ env.NEW_VERSION }}.vsix
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+          name: extension-vsix
+          path: edge-vscode-${{ env.NEW_VERSION }}.vsix
+          retention-days: 7
+
+      - name: Display manual upload instructions
+        run: |
+          echo "======================================================"
+          echo "VSIX file has been packaged successfully!"
+          echo "Version: ${{ env.NEW_VERSION }}"
+          echo ""
+          echo "To complete the release:"
+          echo "1. Download the VSIX artifact from the Actions tab"
+          echo "2. Upload it manually to the VS Code Marketplace at:"
+          echo "   https://marketplace.visualstudio.com/manage/publishers/edge-engineer"
+          echo "======================================================" 
