@@ -23,6 +23,7 @@ export interface LANDevice {
   id: string;
   hostname: string;
   port: number;
+  agentVersion: string | undefined;
 }
 
 export interface DeviceList {
@@ -76,6 +77,7 @@ export class DeviceManager {
       d.id,
       d.address,
       d.address,
+      undefined,
       "Custom"
     ));
     
@@ -107,6 +109,7 @@ export class DeviceManager {
           lanDevice.id,
           lanDevice.hostname,
           lanDevice.displayName,
+          lanDevice.agentVersion,
           "LAN"
         ));
       }
@@ -195,7 +198,38 @@ export class DeviceManager {
       this._onDevicesChanged.fire();
     }
 
-    return new Device(newDevice.id, newDevice.address, "Edge Agent", "Custom");
+    return new Device(newDevice.id, newDevice.address, "Edge Agent", undefined, "Custom");
+  }
+
+  async updateAgent(deviceId: string): Promise<void> {
+    const device = this.devices.find((d) => d.id === deviceId);
+    if (!device) {
+      throw new Error(`Device with ID ${deviceId} not found`);
+    }
+
+    const cli = await EdgeCLI.create();
+    if (!cli) {
+      throw new Error("Failed to create Edge CLI");
+    }
+
+    vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: "Updating Agent",
+      cancellable: false,
+    }, async () => {
+      try {
+        await new Promise<string>((resolve, reject) => {
+          exec(`${cli.path} agent update --agent ${device.address}`, (error, stdout) => {
+            if (error) {
+              reject(error);
+            }
+            resolve(stdout);
+          });
+        });
+      } catch (error) {
+        vscode.window.showErrorMessage(`Failed to update agent: ${error}`);
+      }
+    });
   }
 
   /**

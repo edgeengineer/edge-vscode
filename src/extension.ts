@@ -114,6 +114,15 @@ export async function activate(
       ),
 
       vscode.commands.registerCommand(
+        "edgeDevices.updateAgent",
+        async (item) => {
+          if (item?.device) {
+            await deviceManager.updateAgent(item.device.id);
+          }
+        }
+      ),
+
+      vscode.commands.registerCommand(
         "edgeDevices.selectDevice",
         async (item) => {
           if (item?.device) {

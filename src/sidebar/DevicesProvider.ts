@@ -9,7 +9,7 @@ export class DeviceTreeItem extends vscode.TreeItem {
     private readonly isCurrentDevice: boolean
   ) {
     super(device.address, vscode.TreeItemCollapsibleState.None);
-    this.tooltip = `Device: ${device.id}`;
+    this.tooltip = `Agent Version: ${device.agentVersion || 'unknown'}`;
     this.iconPath = new vscode.ThemeIcon("vm");
     this.description = isCurrentDevice ? `Active (${device.connectionType})` : `(${device.connectionType})`;
 
