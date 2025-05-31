@@ -142,6 +142,15 @@
     "configuration": {
       "title": "EdgeOS",
       "properties": {
+        "edgeos.runtime": {
+          "type": "string",
+          "default": "containerd",
+          "enum": [
+            "containerd",
+            "docker"
+          ],
+          "description": "The runtime to use when deploying to EdgeOS. This can be either `containerd` or `docker`"
+        },
         "edgeos.cliPath": {
           "type": "string",
           "default": "",
