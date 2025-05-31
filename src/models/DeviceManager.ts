@@ -42,6 +42,11 @@ export interface WifiStatus {
   ssid: string;
 }
 
+export interface AgentUpdateAvailable {
+  currentVersion: string;
+  latestVersion: string | undefined;
+}
+
 export interface WifiConnectionResult {
   success: boolean;
 }
@@ -54,6 +59,8 @@ export class DeviceManager {
   private static readonly CURRENT_DEVICE_KEY = "edgeos.currentDevice";
   private _onDevicesChanged = new vscode.EventEmitter<void>();
   private devices: Device[] = [];
+  private deviceIdsCheckedForUpdates: Set<string> = new Set();
+  private currentDevice: Device | undefined;
   readonly onDevicesChanged = this._onDevicesChanged.event;
 
   private _onCurrentDeviceChanged = new vscode.EventEmitter<
@@ -116,10 +123,18 @@ export class DeviceManager {
 
       const devices = [...foundDevices, ...manuallyAddedDevices];
       this.devices = devices;
+      const currentDevice = this.getCurrentDevice();
+      if(currentDevice) {
+        this.checkForUpdates(currentDevice);
+      }
       return devices;
     } catch (error) {
       console.error(error);
       this.devices = manuallyAddedDevices;
+      const currentDevice = this.getCurrentDevice();
+      if(currentDevice) {
+        this.checkForUpdates(currentDevice);
+      }
       return manuallyAddedDevices;
     }
   }
@@ -135,14 +150,48 @@ export class DeviceManager {
   /**
    * Get the current active device
    */
-  async getCurrentDevice(): Promise<Device | undefined> {
+  getCurrentDevice(): Device | undefined {
     const currentId = this.getCurrentDeviceId();
     if (!currentId) {
       return undefined;
     }
 
     const device = this.devices.find((d) => d.id === currentId);
+    this.currentDevice = device;
     return device;
+  }
+
+  async checkForUpdates(device: Device): Promise<void> {
+    if(this.deviceIdsCheckedForUpdates.has(device.id)) {
+      return;
+    }
+    this.deviceIdsCheckedForUpdates.add(device.id);
+
+    const cli = await EdgeCLI.create();
+    if (!cli) {
+      throw new Error("Failed to create Edge CLI");
+    }
+
+    const output = await new Promise<string>((resolve, reject) => {
+      exec(`${cli.path} agent version --agent ${device.address} --json --check-updates --prerelease`, (error, stdout) => {
+        if (error) {
+          reject(error);
+        }
+        resolve(stdout);
+      });
+    });
+
+    const updates: AgentUpdateAvailable = JSON.parse(output);
+    if(updates.latestVersion) {
+      const confirmed = await vscode.window.showInformationMessage(
+        `Update available for ${device.name}: ${updates.latestVersion}`,
+        "Update"
+      );
+
+      if(confirmed === "Update") {
+        await this.updateAgent(device.id);
+      }
+    }
   }
 
   /**
@@ -152,8 +201,13 @@ export class DeviceManager {
     const config = vscode.workspace.getConfiguration();
 
     // If trying to set a device, make sure it exists
-    if (deviceId && !this.devices.some((d) => d.id === deviceId)) {
-      throw new Error(`Device with ID ${deviceId} not found`);
+    if (deviceId) {
+      const device = this.devices.find((d) => d.id === deviceId);
+      if(!device) {
+        throw new Error(`Device with ID ${deviceId} not found`);
+      }
+      this.currentDevice = device;
+      this.checkForUpdates(device);
     }
 
     await config.update(
@@ -214,7 +268,7 @@ export class DeviceManager {
 
     vscode.window.withProgress({
       location: vscode.ProgressLocation.Notification,
-      title: "Updating Agent",
+      title: `Updating EdgeOS Agent on ${device.name}`,
       cancellable: false,
     }, async () => {
       try {
@@ -226,6 +280,8 @@ export class DeviceManager {
             resolve(stdout);
           });
         });
+
+        this._onDevicesChanged.fire();
       } catch (error) {
         vscode.window.showErrorMessage(`Failed to update agent: ${error}`);
       }
