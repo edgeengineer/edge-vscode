@@ -124,6 +124,11 @@ export class EdgeTaskProvider implements vscode.TaskProvider {
             args.push("--agent", currentDevice.address);
           }
 
+          const runtime = vscode.workspace.getConfiguration("edgeos").get<string>("runtime");
+          if(runtime) {
+            args.push("--runtime", runtime);
+          }
+
           // Add --debug parameter for debugging
           args.push("--debug");
 
