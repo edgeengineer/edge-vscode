@@ -30,6 +30,7 @@ const _typeCheck: VerifyFolderOperation = FolderOperation;
 export class EdgeWorkspaceContext implements vscode.Disposable {
   public folders: EdgeFolderContext[] = [];
   private _onDidChangePackage = new vscode.EventEmitter<EdgeFolderContext>();
+  private hasEdgeFolder = false;
   public readonly onDidChangePackage = this._onDidChangePackage.event;
   
   // Add a new event for when folders are ready
@@ -217,6 +218,7 @@ export class EdgeWorkspaceContext implements vscode.Disposable {
     const existingFolder = this.folders.find((f) => f.swift === folder);
 
     if (existingFolder) {
+      this.hasEdgeFolder = true;
       return existingFolder;
     }
 
@@ -258,14 +260,16 @@ export class EdgeWorkspaceContext implements vscode.Disposable {
         this._onDidChangePackage.fire(edgeFolder);
 
         // Refresh debug configurations
-        this.refreshDebugConfigurations();
+        if (!this.hasEdgeFolder) {
+          this.refreshDebugConfigurations();
+        }
 
         break;
       }
       case FolderOperation.remove: {
         // Clean up the EdgeFolderContext for the removed folder
         const edgeFolder = this.folders.find((f) => f.swift === folder);
-        if (edgeFolder) {
+        if (edgeFolder && !this.hasEdgeFolder) {
           edgeFolder.dispose();
           this.folders.splice(this.folders.indexOf(edgeFolder), 1);
 
@@ -284,11 +288,14 @@ export class EdgeWorkspaceContext implements vscode.Disposable {
   /**
    * Refresh the debug configurations in VS Code
    */
-  private refreshDebugConfigurations(): void {
-    vscode.commands.executeCommand("edge.refreshDebugConfigurations");
-
-    this.output.appendLine(
-      "Swift package updated, refreshing debug configurations"
+  private async refreshDebugConfigurations(): Promise<void> {
+    const selection = await vscode.window.showInformationMessage(
+      "Swift package updated. You may need to refresh debug configurations.",
+      "Refresh"
     );
+    
+    if (selection === "Refresh") {
+      vscode.commands.executeCommand("workbench.action.reloadWindow");
+    }
   }
 }
