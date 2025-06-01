@@ -19,6 +19,11 @@ export class Device {
     public readonly name: string,
 
     /**
+     * Version of the EdgeOS agent running on the device
+     */
+    public readonly agentVersion: string | undefined,
+
+    /**
      * Interface type of the device
      */
     public readonly connectionType: "Ethernet" | "USB" | "LAN" | "Custom"

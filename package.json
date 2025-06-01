@@ -73,6 +73,11 @@
         "icon": "$(link)"
       },
       {
+        "command": "edgeDevices.updateAgent",
+        "title": "Update Agent",
+        "icon": "$(sync)"
+      },
+      {
         "command": "edgeDevices.selectDevice",
         "title": "Set as Current Device",
         "icon": "$(check)"
@@ -123,9 +128,8 @@
           "group": "inline"
         },
         {
-          "command": "edgeDevices.connectWifi",
-          "when": "view == edgeDevices && viewItem =~ /device/",
-          "group": "inline"
+          "command": "edgeDevices.updateAgent",
+          "when": "view == edgeDevices && viewItem =~ /device/"
         },
         {
           "command": "edgeDevices.selectDevice",
