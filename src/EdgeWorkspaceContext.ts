@@ -287,7 +287,7 @@ export class EdgeWorkspaceContext implements vscode.Disposable {
   /**
    * Refresh the debug configurations in VS Code
    */
-  private async promptRefreshDebugConfigurations(): Promise<void> {
+  public async promptRefreshDebugConfigurations(): Promise<void> {
     const selection = await vscode.window.showInformationMessage(
       "Swift package updated. You may need to refresh debug configurations.",
       "Refresh"
